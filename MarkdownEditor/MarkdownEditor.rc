@@ -1,0 +1,258 @@
+//Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "targetver.h"
+#endif
+#include "afxres.h"
+#include "verrsrc.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""targetver.h""\r\n"
+    "#endif\r\n"
+    "#include ""afxres.h""\r\n"
+    "#include ""verrsrc.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#include ""res\\MarkdownEditor.rc2""\r\n"
+    "#include ""afxres.rc""\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+IDR_MAINFRAME           ICON                    "res\\MarkdownEditor.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 238, 78
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About MarkdownEditor"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "MyTypora Markdown Editor",IDC_STATIC,42,14,180,8,SS_NOPREFIX
+    LTEXT           "",IDC_STATIC_CONTACT,42,26,186,16,SS_NOPREFIX
+    LTEXT           "Version 1.0.0.2",IDC_STATIC,42,46,180,8
+    DEFPUSHBUTTON   "OK",IDOK,173,58,50,14,WS_GROUP
+END
+
+IDD_UNSAVED_CHANGES_DIALOG DIALOGEX 0, 0, 272, 118
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Unsaved Changes"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "",IDC_STATIC_UNSAVED_MESSAGE,12,10,248,64,SS_LEFT
+    DEFPUSHBUTTON   "Yes",IDYES,56,88,50,16
+    PUSHBUTTON      "No",IDNO,112,88,50,16
+    PUSHBUTTON      "Cancel",IDCANCEL,168,88,50,16
+END
+
+IDD_SWITCH_MODE_DIALOG DIALOGEX 0, 0, 276, 108
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Switch Mode"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "",IDC_STATIC_SWITCH_MODE_MESSAGE,12,12,252,54,SS_LEFT
+    DEFPUSHBUTTON   "Switch",IDYES,92,80,46,16
+    PUSHBUTTON      "Cancel",IDCANCEL,144,80,50,16
+END
+
+IDD_MARKDOWNEDITOR_DIALOG DIALOGEX 0, 0, 480, 350
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_OVERLAPPEDWINDOW | WS_VISIBLE
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "MyTypora - Markdown Editor"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Open File",IDC_BUTTON_OPEN,10,10,80,32,BS_FLAT | BS_OWNERDRAW
+    PUSHBUTTON      "Markdown Mode",IDC_BUTTON_MODE,100,10,120,32,BS_FLAT | BS_OWNERDRAW
+    PUSHBUTTON      "Theme",IDC_BUTTON_THEME,230,10,60,32,BS_FLAT | BS_OWNERDRAW
+    CONTROL         "",IDC_TAB_SIDEBAR,"SysTabControl32",WS_TABSTOP,10,52,140,270
+    CONTROL         "",IDC_TREE_SIDEBAR,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | WS_TABSTOP,10,76,140,246
+    EDITTEXT        IDC_EDIT_FILE_SEARCH,10,52,140,14,ES_AUTOHSCROLL
+    CONTROL         "",IDC_EDIT_CONTENT,"RICHEDIT50W",ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL,160,52,310,270
+    LTEXT           "",IDC_STATIC_OVERLAY,160,52,310,270,SS_CENTER | SS_CENTERIMAGE
+    LTEXT           "No file opened | Mode: Markdown",IDC_STATIC_STATUS,7,328,466,14
+    CONTROL         "",IDC_PROGRESS_STATUS,"msctls_progress32",WS_BORDER,330,328,100,14
+    LTEXT           "",IDC_STATIC_PROGRESS_TEXT,434,328,38,14,SS_RIGHT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,2
+ PRODUCTVERSION 1,0,0,2
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "MyTypora"
+            VALUE "FileDescription", "MyTypora Markdown Editor"
+            VALUE "FileVersion", "1.0.0.2"
+            VALUE "InternalName", "MarkdownEditor.exe"
+            VALUE "LegalCopyright", "Copyright (C) MyTypora 2023"
+            VALUE "OriginalFilename", "MarkdownEditor.exe"
+            VALUE "ProductName", "MyTypora Markdown Editor"
+            VALUE "ProductVersion", "1.0.0.2"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 163
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_MARKDOWNEDITOR_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 473
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 343
+    END
+
+    IDD_UNSAVED_CHANGES_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 265
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 111
+    END
+
+    IDD_SWITCH_MODE_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 269
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 101
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_MARKDOWNEDITOR_DIALOG AFX_DIALOG_LAYOUT
+BEGIN
+    0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 100, 100,
+    0, 100, 100, 0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_ABOUTBOX            "&About MarkdownEditor..."
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE 9, 1
+#include "res\MarkdownEditor.rc2"
+#include "afxres.rc"
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
