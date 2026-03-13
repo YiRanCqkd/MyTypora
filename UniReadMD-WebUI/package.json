@@ -1,0 +1,30 @@
+{
+  "name": "unireadmd-webui",
+  "version": "0.1.0",
+  "private": true,
+  "author": "UniReadMD Team",
+  "description": "UniReadMD WebUI Electron runtime",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"npm --prefix frontend run dev\" \"npm run dev:electron\"",
+    "dev:electron": "wait-on tcp:5173 && set ELECTRON_START_URL=http://127.0.0.1:5173 && electron .\\electron\\main.cjs",
+    "build:frontend": "npm --prefix frontend run build",
+    "pack:win": "npm run build:frontend && powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\pack_installer.ps1",
+    "pack:dir": "npm run build:frontend && electron-builder --config electron\\builder.json --win --dir && .\\patch_exe_icon.bat \".\\release\\electron\\win-unpacked\\UniReadMD.exe\"",
+    "dist:win": "npm run build:frontend && electron-builder --config electron\\builder.json --win nsis",
+    "dist:nsis": "npm run build:frontend && electron-builder --config electron\\builder.json --win nsis",
+    "start:exe": "start_from_exe.bat",
+    "quality:frontend": "npm --prefix frontend run typecheck && npm --prefix frontend run lint && npm --prefix frontend run test && npm --prefix frontend run build && npm --prefix frontend run check:bundle && npm --prefix frontend run perf:run && npm --prefix frontend run perf:check",
+    "e2e:frontend": "npm --prefix frontend run e2e",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "test:frontend": "npm --prefix frontend run test",
+    "typecheck:frontend": "npm --prefix frontend run typecheck",
+    "start": "electron .\\electron\\main.cjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.5"
+  }
+}

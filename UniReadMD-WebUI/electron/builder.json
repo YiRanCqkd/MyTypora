@@ -1,0 +1,54 @@
+{
+  "appId": "com.unireadmd.phase2",
+  "productName": "UniReadMD",
+  "asar": true,
+  "compression": "maximum",
+  "electronLanguages": [
+    "zh-CN",
+    "en-US"
+  ],
+  "forceCodeSigning": false,
+  "npmRebuild": false,
+  "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
+  "directories": {
+    "output": "release/electron",
+    "buildResources": "electron/resources"
+  },
+  "extraResources": [
+    {
+      "from": "res/unireadmd.ico",
+      "to": "res/unireadmd.ico"
+    }
+  ],
+  "files": [
+    "electron/**/*",
+    "frontend/dist/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "electron/main.cjs"
+  },
+  "win": {
+    "icon": "res/unireadmd.ico",
+    "signAndEditExecutable": false,
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "verifyUpdateCodeSignature": false
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "UniReadMD",
+    "installerIcon": "res/unireadmd.ico",
+    "uninstallerIcon": "res/unireadmd.ico",
+    "installerHeaderIcon": "res/unireadmd.ico"
+  }
+}

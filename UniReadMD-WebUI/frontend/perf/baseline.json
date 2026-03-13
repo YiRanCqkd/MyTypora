@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-02-27T08:10:19.644Z",
+  "documentSizeBytes": 5276699,
+  "metrics": {
+    "coldStartMs": 8.96,
+    "open5mbMs": 835.32,
+    "scrollSimulationMs": 2.66,
+    "search5mbMs": 85.01
+  }
+}
