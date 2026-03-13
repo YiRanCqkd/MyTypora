@@ -57,7 +57,8 @@ namespace
 			if (ch == L'|')
 				++pipeCount;
 		}
-		return pipeCount >= 2;
+		// 支持无外侧竖线的两列表写法：a | b
+		return pipeCount >= 1;
 	}
 
 	inline void TransformTableLineToTabsInPlace(std::wstring& text, size_t lineStart, size_t lineEnd)

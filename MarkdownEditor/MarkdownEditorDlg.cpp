@@ -1470,6 +1470,18 @@ BEGIN_MESSAGE_MAP(CMermaidOverlayWnd, CWnd)
 	ON_WM_RBUTTONUP()
 END_MESSAGE_MAP()
 
+BEGIN_MESSAGE_MAP(CTableGridOverlayCtrl, CGridCtrl)
+	ON_WM_MOUSEWHEEL()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONDBLCLK()
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONUP()
+	ON_WM_RBUTTONDOWN()
+	ON_WM_RBUTTONUP()
+	ON_WM_MOUSEACTIVATE()
+	ON_WM_SETFOCUS()
+END_MESSAGE_MAP()
+
 BEGIN_MESSAGE_MAP(CSidebarSplitterWnd, CWnd)
 	ON_WM_PAINT()
 	ON_WM_ERASEBKGND()
@@ -1525,9 +1537,21 @@ void CMermaidOverlayWnd::OnPaint()
 	{
 		m_host->DrawMermaidOverlays(dc);
 		m_host->DrawHorizontalRules(dc);
-		m_host->DrawTableGrid(dc);
 		m_host->DrawTocOverlay(dc);
 	}
+}
+
+BOOL CMermaidOverlayWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+{
+	// 表格覆盖层是该窗口的子控件，将通知转发给宿主对话框处理。
+	if (m_host && ::IsWindow(m_host->GetSafeHwnd()))
+	{
+		LRESULT forwarded = m_host->SendMessage(WM_NOTIFY, wParam, lParam);
+		if (pResult != nullptr)
+			*pResult = forwarded;
+		return TRUE;
+	}
+	return CWnd::OnNotify(wParam, lParam, pResult);
 }
 
 BOOL CMermaidOverlayWnd::OnEraseBkgnd(CDC* /*pDC*/)
@@ -1635,6 +1659,106 @@ void CMermaidOverlayWnd::OnRButtonUp(UINT nFlags, CPoint point)
 		return;
 	}
 	CWnd::OnRButtonUp(nFlags, point);
+}
+
+void CTableGridOverlayCtrl::ForwardMouseToEditor(UINT msg, UINT nFlags, CPoint point)
+{
+	if (!m_host || !::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+		return;
+	ClientToScreen(&point);
+	m_host->m_editContent.ScreenToClient(&point);
+	m_host->m_editContent.SendMessage(msg, static_cast<WPARAM>(nFlags), MAKELPARAM(point.x, point.y));
+}
+
+BOOL CTableGridOverlayCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+	{
+		m_host->m_editContent.SendMessage(
+			WM_MOUSEWHEEL,
+			MAKEWPARAM(nFlags, static_cast<WORD>(zDelta)),
+			MAKELPARAM(pt.x, pt.y));
+		return TRUE;
+	}
+	return CGridCtrl::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+void CTableGridOverlayCtrl::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+	{
+		m_host->m_editContent.SetFocus();
+		ForwardMouseToEditor(WM_LBUTTONDOWN, nFlags, point);
+		return;
+	}
+	CGridCtrl::OnLButtonDown(nFlags, point);
+}
+
+void CTableGridOverlayCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+	{
+		m_host->m_editContent.SetFocus();
+		ForwardMouseToEditor(WM_LBUTTONDBLCLK, nFlags, point);
+		return;
+	}
+	CGridCtrl::OnLButtonDblClk(nFlags, point);
+}
+
+void CTableGridOverlayCtrl::OnMouseMove(UINT nFlags, CPoint point)
+{
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+	{
+		ForwardMouseToEditor(WM_MOUSEMOVE, nFlags, point);
+		return;
+	}
+	CGridCtrl::OnMouseMove(nFlags, point);
+}
+
+void CTableGridOverlayCtrl::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+	{
+		ForwardMouseToEditor(WM_LBUTTONUP, nFlags, point);
+		return;
+	}
+	CGridCtrl::OnLButtonUp(nFlags, point);
+}
+
+void CTableGridOverlayCtrl::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+	{
+		m_host->m_editContent.SetFocus();
+		ForwardMouseToEditor(WM_RBUTTONDOWN, nFlags, point);
+		return;
+	}
+	CGridCtrl::OnRButtonDown(nFlags, point);
+}
+
+void CTableGridOverlayCtrl::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+	{
+		ForwardMouseToEditor(WM_RBUTTONUP, nFlags, point);
+		return;
+	}
+	CGridCtrl::OnRButtonUp(nFlags, point);
+}
+
+int CTableGridOverlayCtrl::OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message)
+{
+	UNREFERENCED_PARAMETER(pDesktopWnd);
+	UNREFERENCED_PARAMETER(nHitTest);
+	UNREFERENCED_PARAMETER(message);
+	return MA_NOACTIVATE;
+}
+
+void CTableGridOverlayCtrl::OnSetFocus(CWnd* pOldWnd)
+{
+	CGridCtrl::OnSetFocus(pOldWnd);
+	if (m_host && ::IsWindow(m_host->m_editContent.GetSafeHwnd()))
+		m_host->m_editContent.SetFocus();
 }
 
 void CSidebarSplitterWnd::OnLButtonDown(UINT nFlags, CPoint point)
@@ -1937,6 +2061,8 @@ BEGIN_MESSAGE_MAP(CMarkdownEditorDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_EDIT_CONTENT, &CMarkdownEditorDlg::OnEnChangeEdit)
 	ON_WM_TIMER()
 	ON_WM_SIZE()
+	ON_WM_ENTERSIZEMOVE()
+	ON_WM_EXITSIZEMOVE()
 	ON_WM_DROPFILES()
 	ON_WM_CTLCOLOR()
 	ON_WM_ERASEBKGND()
@@ -1965,7 +2091,10 @@ END_MESSAGE_MAP()
 
 BOOL CMarkdownEditorDlg::OnEraseBkgnd(CDC* pDC)
 {
-	// Reduce flicker when resizing split panes.
+	// Reduce flicker during live window resize: skip background erase and let child controls repaint.
+	if (m_windowSizingMove)
+		return TRUE;
+
 	// We still fill the dialog background to prevent "stale" blocks after theme switch.
 	if (pDC)
 	{
@@ -3066,6 +3195,7 @@ void CMarkdownEditorDlg::OnDestroy()
 	}
 
 	m_mermaidDiagrams.clear();
+	ClearTableListViewOverlays();
 	for (auto& kv : m_mermaidBitmapCache)
 	{
 		if (kv.second)
@@ -3232,7 +3362,8 @@ BOOL CMarkdownEditorDlg::PreTranslateMessage(MSG* pMsg)
 	// RichEdit may finish layout slightly after scroll messages, so we schedule a short sync.
 	if (pMsg && ::IsWindow(m_editContent.GetSafeHwnd()) && pMsg->hwnd == m_editContent.GetSafeHwnd())
 	{
-		if (m_bMarkdownMode && (pMsg->message == WM_VSCROLL || pMsg->message == WM_HSCROLL || pMsg->message == WM_MOUSEWHEEL))
+		if (m_bMarkdownMode && !m_windowSizingMove &&
+			(pMsg->message == WM_VSCROLL || pMsg->message == WM_HSCROLL || pMsg->message == WM_MOUSEWHEEL))
 		{
 			m_overlaySyncAttempts = 2;
 			KillTimer(kOverlaySyncTimerId);
@@ -3678,7 +3809,8 @@ void CMarkdownEditorDlg::OnTimer(UINT_PTR nIDEvent)
 		else if (nIDEvent == kMermaidOverlayTimerId)
 		{
 			// Keep overlay rectangles in sync even when they are currently off-screen.
-			UpdateMermaidOverlayRegion(false);
+			if (!m_windowSizingMove && !m_loadingActive && !m_parsingActive && !m_formattingActive)
+				UpdateMermaidOverlayRegion(false);
 		}
 		else if (nIDEvent == kOutlineFollowTimerId)
 		{
@@ -3689,9 +3821,12 @@ void CMarkdownEditorDlg::OnTimer(UINT_PTR nIDEvent)
 		else if (nIDEvent == kOverlaySyncTimerId)
 		{
 			KillTimer(kOverlaySyncTimerId);
-			UpdateMermaidOverlayRegion(true);
-			if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
-				m_mermaidOverlay.Invalidate(FALSE);
+			if (!m_windowSizingMove)
+			{
+				UpdateMermaidOverlayRegion(true);
+				if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
+					m_mermaidOverlay.Invalidate(FALSE);
+			}
 			// RichEdit may still be settling after a programmatic scroll; do a few retries.
 			if (m_overlaySyncAttempts > 0)
 			{
@@ -3740,27 +3875,66 @@ void CMarkdownEditorDlg::OnSize(UINT nType, int cx, int cy)
 		return;
 
 	UpdateLayout(cx, cy);
-	if (m_bMarkdownMode && !m_tocOverlayBlocks.empty())
-		UpdateTocSpacing();
-	UpdateMermaidOverlayRegion(true);
-	// Fix: maximize/restore can leave static controls (status bar) with stale paint (ghosting).
-	if (nType == SIZE_MAXIMIZED || nType == SIZE_RESTORED)
+	if (!m_windowSizingMove)
+	{
+		// 表格覆盖层自适应，不再在窗口变化时重跑整文档格式化。
+		if (m_bMarkdownMode && !m_tocOverlayBlocks.empty())
+			UpdateTocSpacing();
+		UpdateMermaidOverlayRegion(true);
+	}
+	// Fix: maximize/restore can leave static controls with stale paint.
+	// During live resizing, avoid synchronous erase/update (causes visible flicker).
+	if (!m_windowSizingMove && (nType == SIZE_MAXIMIZED || nType == SIZE_RESTORED))
 	{
 		if (::IsWindow(m_staticStatus.GetSafeHwnd()))
-			m_staticStatus.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
+			m_staticStatus.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW);
 		if (::IsWindow(m_progressStatus.GetSafeHwnd()))
-			m_progressStatus.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
+			m_progressStatus.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW);
 		if (::IsWindow(m_staticProgressText.GetSafeHwnd()))
-			m_staticProgressText.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW);
-		RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+			m_staticProgressText.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW);
+		RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_NOERASE | RDW_ALLCHILDREN);
 	}
 	// On some systems, maximize/restore can leave the RichEdit with a stale invalid region
 	// (content appears blank until the next scroll). Force a repaint.
-	if (::IsWindow(m_editContent.GetSafeHwnd()))
+	if (!m_windowSizingMove && ::IsWindow(m_editContent.GetSafeHwnd()))
 	{
 		m_editContent.Invalidate(FALSE);
 		m_editContent.UpdateWindow();
 	}
+}
+
+void CMarkdownEditorDlg::OnEnterSizeMove()
+{
+	CDialogEx::OnEnterSizeMove();
+	m_windowSizingMove = true;
+	KillTimer(kOverlaySyncTimerId);
+	if (m_mermaidOverlayTimer != 0)
+	{
+		KillTimer(kMermaidOverlayTimerId);
+		m_mermaidOverlayTimer = 0;
+	}
+	if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
+		m_mermaidOverlay.ShowWindow(SW_HIDE);
+}
+
+void CMarkdownEditorDlg::OnExitSizeMove()
+{
+	CDialogEx::OnExitSizeMove();
+	m_windowSizingMove = false;
+	UpdateEditorWrapWidth();
+	if (!m_bMarkdownMode)
+		return;
+	if (m_tocOverlayBlocks.empty())
+	{
+		if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
+			m_mermaidOverlay.ShowWindow(SW_SHOW);
+		UpdateMermaidOverlayRegion(true);
+		return;
+	}
+	if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
+		m_mermaidOverlay.ShowWindow(SW_SHOW);
+	UpdateTocSpacing();
+	UpdateMermaidOverlayRegion(true);
 }
 
 void CMarkdownEditorDlg::BeginSidebarResize(int xClient)
@@ -4002,13 +4176,15 @@ void CMarkdownEditorDlg::UpdateLayout(int cx, int cy)
 	int editLeft = sidebarRight + gap;
 	// Keep the editor close to the right frame so the scrollbar aligns with the window edge.
 	const int editRightPadding = 1;
-	int editWidth = max(cx - editLeft - editRightPadding, 0);
-	int editHeight = max(editBottom - editTop, 0);
-	if (::IsWindow(m_editContent.GetSafeHwnd()))
-		m_editContent.MoveWindow(editLeft, editTop, editWidth, editHeight);
+int editWidth = max(cx - editLeft - editRightPadding, 0);
+int editHeight = max(editBottom - editTop, 0);
+if (::IsWindow(m_editContent.GetSafeHwnd()))
+	m_editContent.MoveWindow(editLeft, editTop, editWidth, editHeight);
+// Live window resize: defer expensive RichEdit wrap-target reflow to OnExitSizeMove.
+if (!m_windowSizingMove)
 	UpdateEditorWrapWidth();
-	if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
-		m_mermaidOverlay.MoveWindow(editLeft, editTop, editWidth, editHeight);
+if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
+	m_mermaidOverlay.MoveWindow(editLeft, editTop, editWidth, editHeight);
 	if (::IsWindow(m_staticOverlay.GetSafeHwnd()))
 		m_staticOverlay.MoveWindow(editLeft, editTop, editWidth, editHeight);
 
@@ -4991,6 +5167,9 @@ void CMarkdownEditorDlg::StartInsertLoadedText()
 	m_textDirty = false;
 	KillTimer(kInsertTimerId);
 	m_editContent.SetRedraw(TRUE);
+	const FullTextReplaceTask finishedTask = m_fullTextReplaceTask;
+	const bool startFormatting = m_startFormattingAfterFullTextReplace;
+	const bool startTextReset = m_startTextModeResetAfterFullTextReplace;
 	// Ensure newly opened documents always start at the beginning.
 	{
 		m_suppressChangeEvent = true;
@@ -4998,12 +5177,13 @@ void CMarkdownEditorDlg::StartInsertLoadedText()
 		m_editContent.SendMessage(EM_SCROLLCARET, 0, 0);
 		m_suppressChangeEvent = false;
 	}
-	m_editContent.Invalidate();
-	m_editContent.UpdateWindow();
+	m_editContent.Invalidate(FALSE);
+	if (!startFormatting)
+		m_editContent.UpdateWindow();
 
 	// Ensure emoji/symbols (e.g. ✅🔧🧪) render even before markdown parsing finishes (or if parsing fails).
 	// This is especially important for headings, which often start with such symbols.
-	if (m_bMarkdownMode && !m_rawDocumentText.empty())
+	if (m_bMarkdownMode && !startFormatting && !m_rawDocumentText.empty())
 	{
 		GETTEXTLENGTHEX textLenEx{};
 		textLenEx.flags = GTL_NUMCHARS;
@@ -5013,10 +5193,6 @@ void CMarkdownEditorDlg::StartInsertLoadedText()
 		if (len > 0)
 			ApplyEmojiFontFallbackToEdit(m_rawDocumentText, len);
 	}
-
-	const FullTextReplaceTask finishedTask = m_fullTextReplaceTask;
-	const bool startFormatting = m_startFormattingAfterFullTextReplace;
-	const bool startTextReset = m_startTextModeResetAfterFullTextReplace;
 
 	m_fullTextReplaceTask = FullTextReplaceTask::None;
 	m_startFormattingAfterFullTextReplace = false;
@@ -6322,7 +6498,7 @@ void CMarkdownEditorDlg::OnEditContentVScroll()
 {
 	if (m_bMarkdownMode)
 	{
-		if (::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
+		if (!m_windowSizingMove && ::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
 		{
 			UpdateMermaidOverlayRegion(false);
 			m_mermaidOverlay.Invalidate(FALSE);
@@ -6333,7 +6509,7 @@ void CMarkdownEditorDlg::OnEditContentVScroll()
 
 void CMarkdownEditorDlg::OnEditContentHScroll()
 {
-	if (!m_bMarkdownMode)
+	if (!m_bMarkdownMode || m_windowSizingMove)
 		return;
 	if (!::IsWindow(m_mermaidOverlay.GetSafeHwnd()))
 		return;
@@ -6839,6 +7015,7 @@ LRESULT CMarkdownEditorDlg::OnMarkdownParseComplete(WPARAM /*wParam*/, LPARAM lP
 		m_headingRanges.clear();
 		m_horizontalRuleStarts.clear();
 		m_tableOverlayRows.clear();
+		ClearTableListViewOverlays();
 		m_tocOverlayBlocks.clear();
 		m_tocHitRegions.clear();
 		m_outlineEntries = std::move(payload->outlineEntries);
@@ -7429,129 +7606,204 @@ void CMarkdownEditorDlg::ApplyMarkdownFormattingChunk()
 		return (hasGraph || hasFlowchart) && (hasDirVertical || hasDirHorizontal) && hasEdge && hasNode;
 	};
 
-	auto applyTableParaFormat = [&](const MarkdownBlockSpan& span) {
-		if (span.tabStopCount <= 0)
-			return;
+	auto getTableAvailableWidthTwips = [&]() -> LONG {
+		CRect formatRect;
+		m_editContent.GetRect(&formatRect);
+		int widthPx = formatRect.Width();
+		if (widthPx <= 0)
+		{
+			CRect clientRect;
+			m_editContent.GetClientRect(&clientRect);
+			widthPx = clientRect.Width();
+		}
+		if (widthPx <= 0)
+			return 0;
 
-		auto isLikelyTableLine = [&](int line) -> bool {
-			if (line < 0)
-				return false;
-			long lineStart = m_editContent.LineIndex(line);
-			if (lineStart < 0)
-				return false;
-			int lineLen = m_editContent.LineLength(static_cast<int>(lineStart));
-			if (lineLen <= 0)
-				return false;
-			const int sampleLen = min(lineLen, 512);
-			CString buf;
-			LPTSTR raw = buf.GetBuffer(sampleLen + 2);
-			*reinterpret_cast<WORD*>(raw) = static_cast<WORD>(sampleLen);
-			int copied = m_editContent.GetLine(line, raw, sampleLen);
-			buf.ReleaseBuffer(max(copied, 0));
-			if (buf.IsEmpty())
-				return false;
+		CClientDC dpiDc(&m_editContent);
+		int dpiX = dpiDc.GetDeviceCaps(LOGPIXELSX);
+		if (dpiX <= 0)
+			dpiX = 96;
 
-			int pipeCount = 0;
-			int tabCount = 0;
-			for (int i = 0; i < buf.GetLength(); ++i)
+		LONG availableTwips = static_cast<LONG>(MulDiv(max(80, widthPx - 8), 1440, dpiX));
+		const LONG kSidePaddingTwips = 240;
+		if (availableTwips > kSidePaddingTwips)
+			availableTwips -= kSidePaddingTwips;
+		return (std::max)(availableTwips, static_cast<LONG>(1));
+	};
+
+	// 统一表格列宽自适应策略：始终按当前可视宽度回流，避免“中间伪空列/空白带”。
+	auto buildAdjustedTableStops = [&](const MarkdownBlockSpan& sourceSpan, LONG outStops[32], int& outCount) -> bool {
+		outCount = min(sourceSpan.tabStopCount, 32);
+		if (outCount <= 0)
+			return false;
+
+		LONG prevStop = 0;
+		for (int i = 0; i < outCount; ++i)
+		{
+			LONG stop = sourceSpan.tabStopsTwips[i];
+			if (stop <= prevStop)
+				stop = prevStop + 1;
+			outStops[i] = stop;
+			prevStop = stop;
+		}
+
+		const LONG availableTwips = getTableAvailableWidthTwips();
+		if (availableTwips <= 0)
+			return true;
+
+		LONG sourceWidths[32]{};
+		LONG prevEdge = 0;
+		LONG sourceTotal = 0;
+		for (int i = 0; i < outCount; ++i)
+		{
+			LONG width = outStops[i] - prevEdge;
+			if (width <= 0)
+				width = 1;
+			sourceWidths[i] = width;
+			sourceTotal += width;
+			prevEdge = outStops[i];
+		}
+		if (sourceTotal <= 0)
+			sourceTotal = outCount;
+
+		const LONG kPreferredMinColTwips = 420;
+		const LONG kSoftMinColTwips = 180;
+		LONG adaptivePerCol = availableTwips / outCount;
+		if (adaptivePerCol < 1)
+			adaptivePerCol = 1;
+
+		LONG minColTwips = kPreferredMinColTwips;
+		if (availableTwips < kPreferredMinColTwips * outCount)
+			minColTwips = adaptivePerCol;
+		else if (adaptivePerCol < minColTwips)
+			minColTwips = adaptivePerCol;
+		if (minColTwips < kSoftMinColTwips && availableTwips >= kSoftMinColTwips * outCount)
+			minColTwips = kSoftMinColTwips;
+		if (minColTwips > adaptivePerCol)
+			minColTwips = adaptivePerCol;
+		if (minColTwips < 1)
+			minColTwips = 1;
+
+		LONG remainingTotal = availableTwips;
+		LONG remainingWeight = sourceTotal;
+		LONG accum = 0;
+		for (int i = 0; i < outCount; ++i)
+		{
+			const int remainingCols = outCount - i;
+			const LONG minReservedForOthers = minColTwips * (remainingCols - 1);
+			const LONG distributable = (std::max)(static_cast<LONG>(0), remainingTotal - minColTwips * remainingCols);
+
+			LONG part = 0;
+			if (remainingWeight > 0 && distributable > 0)
 			{
-				if (buf[i] == _T('|'))
-					++pipeCount;
-				else if (buf[i] == _T('\t'))
-					++tabCount;
+				if (i == outCount - 1)
+					part = distributable;
+				else
+					part = static_cast<LONG>(MulDiv(distributable, sourceWidths[i], remainingWeight));
 			}
 
-			// In Markdown display mode, table row candidates should contain at least one tab
-			// (inner pipes transformed to tabs). Separator lines may have pipes but no tabs.
-			return tabCount >= 1 || pipeCount >= 2;
-		};
+			LONG colWidth = minColTwips + part;
+			LONG maxAllowed = remainingTotal - minReservedForOthers;
+			if (maxAllowed < minColTwips)
+				maxAllowed = minColTwips;
 
-		auto applyToLine = [&](int line) {
-			if (line < 0)
-				return;
-			if (!isLikelyTableLine(line))
-				return;
-			long lineStart = m_editContent.LineIndex(line);
-			if (lineStart < 0)
-				return;
-			long lineLen = m_editContent.LineLength(static_cast<int>(lineStart));
-			long lineEnd = lineStart + lineLen;
-			if (lineEnd < lineStart)
-				lineEnd = lineStart;
-			if (lineEnd < m_pendingTextLength)
-				lineEnd = min(lineEnd + 1, m_pendingTextLength); // include paragraph mark
-			if (lineStart >= lineEnd)
-				return;
-
-			PARAFORMAT2 para{};
-			para.cbSize = sizeof(para);
-			para.dwMask = PFM_TABSTOPS | PFM_ALIGNMENT | PFM_STARTINDENT | PFM_OFFSET;
-			para.wAlignment = PFA_LEFT;
-			para.dxStartIndent = 0;
-			para.dxOffset = 0;
-			// Table rows are rendered as: col0<TAB>col1<TAB>...<TAB>(trailing outer pipe).
-			// Keep one extra tab stop so the trailing TAB stays inside table right border.
-			const int columnCount = min(span.tabStopCount, 32);
-			para.cTabCount = max(0, columnCount);
-			for (int i = 0; i < para.cTabCount; ++i)
+			// 防止单列占用过宽导致中间出现明显空白带。
+			if (remainingCols > 1)
 			{
-				// Last tab stop anchors the trailing outer-pipe tab.
-				// Use +1 twip to guarantee this stop is strictly greater than a possible
-				// right-aligned last-cell end position at exact right edge.
-				if (i == columnCount - 1)
-				{
-					LONG trailingAlign = kRichTabAlignLeft;
-					if (columnCount > 1)
-					{
-						const int lastColumnAlign = span.tabAlignments[columnCount - 1];
-						if (lastColumnAlign == 1)
-							trailingAlign = kRichTabAlignCenter;
-						else if (lastColumnAlign == 2)
-							trailingAlign = kRichTabAlignRight;
-					}
-					LONG tabPos = span.tabStopsTwips[columnCount - 1] + 1;
-					LONG tab = (tabPos & kRichTabPosMask) | trailingAlign;
-					para.rgxTabs[i] = tab;
-					continue;
-				}
-
-				const int targetColumn = i + 1; // align this column
-				const LONG leftEdge = span.tabStopsTwips[targetColumn - 1];
-				const LONG rightEdge = span.tabStopsTwips[targetColumn];
-				LONG width = rightEdge - leftEdge;
-				if (width <= 0)
-					width = 1;
-
-				LONG tabPos = leftEdge;
-				LONG tabAlign = kRichTabAlignLeft;
-				const int align = span.tabAlignments[targetColumn];
-				if (align == 1)
-				{
-					tabPos = leftEdge + width / 2;
-					tabAlign = kRichTabAlignCenter;
-				}
-				else if (align == 2)
-				{
-					tabPos = rightEdge;
-					tabAlign = kRichTabAlignRight;
-				}
-
-				LONG tab = (tabPos & kRichTabPosMask) | tabAlign;
-				para.rgxTabs[i] = tab;
+				LONG softCap = (std::max)(minColTwips, (availableTwips * 70) / 100);
+				if (maxAllowed > softCap)
+					maxAllowed = softCap;
 			}
-			m_editContent.SetSel(static_cast<LONG>(lineStart), static_cast<LONG>(lineEnd));
-			m_editContent.SetParaFormat(para);
-		};
 
-		// IMPORTANT:
-		// RichEdit line metrics can be inconsistent around hidden paragraphs (e.g. the table
-		// separator line which is hidden later). Applying tab stops to a small forward window
-		// stabilizes alignment without impacting non-table paragraphs.
-		long pos = clampValue(span.start);
-		int line = m_editContent.LineFromChar(pos);
-		applyToLine(line);
-		applyToLine(line + 1);
-		applyToLine(line + 2);
+			if (colWidth > maxAllowed)
+				colWidth = maxAllowed;
+			if (colWidth < minColTwips)
+				colWidth = minColTwips;
+
+			accum += colWidth;
+			outStops[i] = accum;
+
+			remainingTotal -= colWidth;
+			if (remainingTotal < 0)
+				remainingTotal = 0;
+			remainingWeight -= sourceWidths[i];
+			if (remainingWeight < 0)
+				remainingWeight = 0;
+		}
+
+		// 舍入修正：保证最后一个停靠点与目标总宽一致，避免右边界漂移。
+		LONG drift = availableTwips - outStops[outCount - 1];
+		if (drift != 0)
+		{
+			for (int i = 0; i < outCount; ++i)
+			{
+				outStops[i] += drift;
+				if (outStops[i] < i + 1)
+					outStops[i] = i + 1;
+			}
+		}
+		return true;
+	};
+
+	auto appendTableOverlayRow = [&](const MarkdownBlockSpan& span, bool isHeader, COLORREF backColor) {
+		TableOverlayRow row{};
+		row.start = span.start;
+		row.end = span.end;
+		row.tabStopCount = min(span.tabStopCount, 32);
+		LONG adjustedStops[32]{};
+		int adjustedStopCount = 0;
+		if (buildAdjustedTableStops(span, adjustedStops, adjustedStopCount))
+		{
+			row.tabStopCount = adjustedStopCount > 0 ? adjustedStopCount : row.tabStopCount;
+			for (int i = 0; i < row.tabStopCount; ++i)
+				row.tabStopsTwips[i] = (adjustedStopCount > 0) ? adjustedStops[i] : span.tabStopsTwips[i];
+		}
+		row.isHeader = isHeader;
+		row.backColor = backColor;
+		m_tableOverlayRows.push_back(row);
+	};
+
+	// 表格文本由 GridCtrl 覆盖层统一绘制：
+	// 底层 RichEdit 仅隐藏文字，不再保留旧表格底色，避免滚动时出现底层色块干扰。
+	auto buildTableBaseTextHiddenFormat = [&]() -> CHARFORMAT2 {
+		CHARFORMAT2 fmt = m_normalFormat;
+		fmt.dwMask |= CFM_COLOR;
+		fmt.dwMask &= ~CFM_BACKCOLOR;
+		fmt.dwEffects &= ~CFE_AUTOCOLOR;
+		fmt.crTextColor = m_themeBackground;
+		return fmt;
+	};
+
+	auto isInsideTableBlock = [&](long pos) -> bool {
+		for (const auto& block : m_pendingParseResult.blockSpans)
+		{
+			if (block.type != MarkdownBlockType::TableHeader &&
+				block.type != MarkdownBlockType::TableRowEven &&
+				block.type != MarkdownBlockType::TableRowOdd)
+			{
+				continue;
+			}
+			if (pos >= block.start && pos < block.end)
+				return true;
+		}
+		return false;
+	};
+
+	auto isRangeIntersectTableBlock = [&](long start, long end) -> bool {
+		if (end <= start)
+			return isInsideTableBlock(start);
+		for (const auto& block : m_pendingParseResult.blockSpans)
+		{
+			if (block.type != MarkdownBlockType::TableHeader &&
+				block.type != MarkdownBlockType::TableRowEven &&
+				block.type != MarkdownBlockType::TableRowOdd)
+			{
+				continue;
+			}
+			if (end > block.start && start < block.end)
+				return true;
+		}
+		return false;
 	};
 
 	DWORD startTick = GetTickCount();
@@ -7687,43 +7939,16 @@ void CMarkdownEditorDlg::ApplyMarkdownFormattingChunk()
 				}
 				break;
 			case MarkdownBlockType::TableHeader:
-				applyRange(span.start, span.end, m_tableHeaderFormat);
-				applyTableParaFormat(span);
-				{
-					TableOverlayRow row{};
-					row.start = span.start;
-					row.tabStopCount = min(span.tabStopCount, 32);
-					for (int i = 0; i < row.tabStopCount; ++i)
-						row.tabStopsTwips[i] = span.tabStopsTwips[i];
-					row.isHeader = true;
-					m_tableOverlayRows.push_back(row);
-				}
+				applyRange(span.start, span.end, buildTableBaseTextHiddenFormat());
+				appendTableOverlayRow(span, true, m_tableHeaderFormat.crBackColor);
 				break;
 			case MarkdownBlockType::TableRowEven:
-				applyRange(span.start, span.end, m_tableRowEvenFormat);
-				applyTableParaFormat(span);
-				{
-					TableOverlayRow row{};
-					row.start = span.start;
-					row.tabStopCount = min(span.tabStopCount, 32);
-					for (int i = 0; i < row.tabStopCount; ++i)
-						row.tabStopsTwips[i] = span.tabStopsTwips[i];
-					row.isHeader = false;
-					m_tableOverlayRows.push_back(row);
-				}
+				applyRange(span.start, span.end, buildTableBaseTextHiddenFormat());
+				appendTableOverlayRow(span, false, m_tableRowEvenFormat.crBackColor);
 				break;
 			case MarkdownBlockType::TableRowOdd:
-				applyRange(span.start, span.end, m_tableRowOddFormat);
-				applyTableParaFormat(span);
-				{
-					TableOverlayRow row{};
-					row.start = span.start;
-					row.tabStopCount = min(span.tabStopCount, 32);
-					for (int i = 0; i < row.tabStopCount; ++i)
-						row.tabStopsTwips[i] = span.tabStopsTwips[i];
-					row.isHeader = false;
-					m_tableOverlayRows.push_back(row);
-				}
+				applyRange(span.start, span.end, buildTableBaseTextHiddenFormat());
+				appendTableOverlayRow(span, false, m_tableRowOddFormat.crBackColor);
 				break;
 			case MarkdownBlockType::HorizontalRule:
 				// Hide the source marker line, draw a real horizontal rule via overlay.
@@ -7738,6 +7963,10 @@ void CMarkdownEditorDlg::ApplyMarkdownFormattingChunk()
 		if (m_inlineSpanIndex < m_pendingParseResult.inlineSpans.size())
 		{
 			const auto& span = m_pendingParseResult.inlineSpans[m_inlineSpanIndex++];
+			// 表格正文由 Grid 覆盖层统一绘制，底层 RichEdit 的内联样式全部跳过，
+			// 避免重新显色导致漏字/色块伪影。
+			if (isRangeIntersectTableBlock(span.start, span.end))
+				continue;
 			switch (span.type)
 			{
 			case MarkdownInlineType::Bold: applyRange(span.start, span.end, m_boldFormat); break;
@@ -7794,7 +8023,6 @@ void CMarkdownEditorDlg::ApplyMarkdownFormattingChunk()
 		}
 
 		FinishMarkdownFormatting();
-		UpdateMermaidOverlayRegion(true);
 		return;
 	}
 	}

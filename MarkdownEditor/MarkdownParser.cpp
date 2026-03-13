@@ -785,7 +785,8 @@ void MarkdownParser::ParseBlocks(const std::wstring& text,
                     if (ch == L'|')
                         ++pipeCount;
                 }
-                return pipeCount >= 2;
+                // 支持无外侧竖线的两列表写法：a | b
+                return pipeCount >= 1;
             };
 
             auto countTableColumns = [&](const std::wstring& row) -> int {
@@ -945,10 +946,33 @@ void MarkdownParser::ParseBlocks(const std::wstring& text,
 							if (e <= s)
 								return cells;
 
+							auto isEscaped = [&](size_t index) {
+								if (index <= s)
+									return false;
+								size_t backslashes = 0;
+								size_t p = index;
+								while (p > s)
+								{
+									--p;
+									if (row[p] == L'\\')
+										++backslashes;
+									else
+										break;
+								}
+								return (backslashes % 2) == 1;
+							};
+
 							size_t cellStart = s;
+							bool inCodeSpan = false;
 							for (size_t i = s; i < e; ++i)
 							{
-								if (row[i] == L'|' && (i == s || row[i - 1] != L'\\'))
+								if (row[i] == L'`' && !isEscaped(i))
+								{
+									inCodeSpan = !inCodeSpan;
+									continue;
+								}
+
+								if (row[i] == L'|' && !inCodeSpan && !isEscaped(i))
 								{
 									size_t cs = cellStart;
 									size_t ce = i;
@@ -1090,19 +1114,25 @@ void MarkdownParser::ParseBlocks(const std::wstring& text,
 							tablePos = rowLineEndPos + rowNewlineLength;
 						}
 
-						// Dynamic table widths: each column uses the widest cell in that column.
-						int detectedColumns = 0;
-						for (const auto& tr : tableRows)
+						const std::vector<int> parsedAlignments = parseTableAlignments(nextLine);
+						// 列数优先以分隔线为准（标准 GFM 语义）。
+						// 仅当分隔线异常无法给出列数时，才退化为按数据行推断。
+						int detectedColumns = static_cast<int>(parsedAlignments.size());
+						if (detectedColumns <= 0)
 						{
-							detectedColumns = (std::max)(detectedColumns, (int)splitTableCells(tr.text).size());
+							for (const auto& tr : tableRows)
+							{
+								const int splitColumns = static_cast<int>(splitTableCells(tr.text).size());
+								detectedColumns = (std::max)(detectedColumns, splitColumns);
+							}
 						}
+
 						int tabStopCount = detectedColumns;
 						if (tabStopCount < 1)
 							tabStopCount = 1;
 						if (tabStopCount > kMaxTabStops)
 							tabStopCount = kMaxTabStops;
 
-						const std::vector<int> parsedAlignments = parseTableAlignments(nextLine);
 						std::vector<int> colAlignments((size_t)tabStopCount, 0);
 						for (int ci = 0; ci < tabStopCount && ci < static_cast<int>(parsedAlignments.size()); ++ci)
 							colAlignments[(size_t)ci] = parsedAlignments[(size_t)ci];

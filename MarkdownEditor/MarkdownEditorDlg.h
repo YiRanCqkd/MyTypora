@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MarkdownParser.h"
+#include "third_party/gridctrl_src/GridCtrl.h"
 
 #include <atomic>
 #include <map>
@@ -25,6 +26,7 @@ class CMermaidOverlayWnd : public CWnd
 {
 public:
 	void SetHost(CMarkdownEditorDlg* host) { m_host = host; }
+	virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult) override;
 
 protected:
 	afx_msg void OnPaint();
@@ -41,6 +43,28 @@ protected:
 private:
 	CMarkdownEditorDlg* m_host = nullptr;
 	bool m_tocClickSuppressUp = false;
+};
+
+class CTableGridOverlayCtrl : public CGridCtrl
+{
+public:
+	void SetHost(CMarkdownEditorDlg* host) { m_host = host; }
+
+protected:
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
+	afx_msg int OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
+	afx_msg void OnSetFocus(CWnd* pOldWnd);
+	DECLARE_MESSAGE_MAP()
+
+private:
+	void ForwardMouseToEditor(UINT msg, UINT nFlags, CPoint point);
+	CMarkdownEditorDlg* m_host = nullptr;
 };
 
 class CSidebarSplitterWnd : public CWnd
@@ -122,6 +146,8 @@ protected:
     afx_msg void OnEnChangeEdit();
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnEnterSizeMove();
+	afx_msg void OnExitSizeMove();
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 	afx_msg void OnEditContentLink(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEditContentSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -131,7 +157,7 @@ protected:
 	void SearchOutlineByQuery(const CString& query);
     afx_msg LRESULT OnInitDragDrop(WPARAM wParam, LPARAM lParam);
     afx_msg void OnSidebarTabChanged(NMHDR* pNMHDR, LRESULT* pResult);
-    afx_msg void OnSidebarItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnSidebarItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnSidebarTreeClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnSidebarTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEnChangeFileSearch();
@@ -153,6 +179,7 @@ protected:
 
 private:
     friend class CMermaidOverlayWnd;
+	friend class CTableGridOverlayCtrl;
     friend class CSidebarSplitterWnd;
     friend class CSidebarTabCtrl;
     friend class CSidebarSearchEdit;
@@ -323,6 +350,7 @@ private:
 	int m_sidebarSplitterTop = 0;
 	int m_sidebarSplitterBottom = 0;
 	bool m_sidebarResizing = false;
+	bool m_windowSizingMove = false;
 	int m_sidebarResizeStartX = 0;
 	int m_sidebarResizeStartWidth = 0;
 	WNDPROC m_oldRichEditProc = nullptr;
@@ -459,7 +487,8 @@ private:
 	void TouchMermaidBitmapCache(size_t hash);
 	void TrimMermaidBitmapCache(size_t reserveForNewEntry, const std::set<size_t>* protectedHashes);
 	void DrawHorizontalRules(CDC& dc);
-	void DrawTableGrid(CDC& dc);
+	void UpdateTableListViewOverlays();
+	void ClearTableListViewOverlays();
 	void DrawTocOverlay(CDC& dc);
 	void UpdateMermaidSpacing();
 	void UpdateTocSpacing();
@@ -471,11 +500,25 @@ private:
 	struct TableOverlayRow
 	{
 		long start = 0;
+		long end = 0;
 		int tabStopCount = 0;
 		LONG tabStopsTwips[32]{};
 		bool isHeader = false;
+		COLORREF backColor = CLR_INVALID;
 	};
 	std::vector<TableOverlayRow> m_tableOverlayRows;
+	struct TableListViewOverlay
+	{
+		std::unique_ptr<CTableGridOverlayCtrl> gridCtrl;
+		long anchorRowStart = -1;
+		int cachedLeft = 0;
+		int cachedRight = 0;
+		int cachedHeight = 0;
+		bool active = false;
+	};
+	std::vector<TableListViewOverlay> m_tableListViewOverlays;
+	CFont m_tableListViewFont;
+	int m_tableListViewFontZoom = 0;
 	struct TocOverlayLine
 	{
 		std::wstring text;
@@ -495,6 +538,10 @@ private:
 	};
 	std::vector<TocHitRegion> m_tocHitRegions;
 	std::vector<long> m_tocSpaceAfterStarts;
+	std::vector<long> m_tableSpaceAfterStarts;
+	int m_tableSpaceAfterWidthPx = 0;
+	int m_tableSpaceAfterZoom = 0;
+	size_t m_tableSpaceAfterRowStamp = 0;
 
 	struct HeadingRange
 	{

@@ -133,6 +133,11 @@ namespace
 void CMarkdownEditorDlg::UpdateMermaidOverlayRegion(bool forceInvalidate)
 {
 	if (!::IsWindow(m_mermaidOverlay.GetSafeHwnd()) || !::IsWindow(m_editContent.GetSafeHwnd()))
+	{
+		ClearTableListViewOverlays();
+		return;
+	}
+	if (m_windowSizingMove)
 		return;
 	if (m_sidebarResizing)
 		return;
@@ -141,6 +146,7 @@ void CMarkdownEditorDlg::UpdateMermaidOverlayRegion(bool forceInvalidate)
 
 	if (!m_bMarkdownMode || (m_mermaidBlocks.empty() && m_horizontalRuleStarts.empty() && m_tableOverlayRows.empty() && m_tocOverlayBlocks.empty()))
 	{
+		ClearTableListViewOverlays();
 		m_tocHitRegions.clear();
 		m_mermaidOverlay.ShowWindow(SW_HIDE);
 		if (m_mermaidOverlayTimer != 0)
@@ -152,11 +158,15 @@ void CMarkdownEditorDlg::UpdateMermaidOverlayRegion(bool forceInvalidate)
 	}
 
 	std::vector<CRect> newRects;
-	newRects.reserve(m_mermaidDiagrams.size() + m_horizontalRuleStarts.size() + m_tableOverlayRows.size() + m_tocOverlayBlocks.size());
+	newRects.reserve(m_mermaidDiagrams.size() + m_horizontalRuleStarts.size() + m_tocOverlayBlocks.size() + 1);
+	const bool needOverlayKeepaliveTimer =
+		!m_mermaidBlocks.empty() || !m_mermaidDiagrams.empty() ||
+		!m_horizontalRuleStarts.empty() || !m_tocOverlayBlocks.empty();
 
 	CRect overlayClient;
 	m_mermaidOverlay.GetClientRect(&overlayClient);
 	const double zoomScale = max(0.1, min(5.0, (double)GetZoomPercent() / 100.0));
+	UpdateTableListViewOverlays();
 
 	for (const auto& diagram : m_mermaidDiagrams)
 	{
@@ -233,56 +243,26 @@ void CMarkdownEditorDlg::UpdateMermaidOverlayRegion(bool forceInvalidate)
 		newRects.push_back(rc);
 	}
 
-	// Table grid lines: include each table row region.
-	if (!m_tableOverlayRows.empty())
+	// 表格仅由 GridCtrl 子控件渲染，region 使用控件当前可见矩形，避免全屏 overlay 造成滚动残影。
+	for (const auto& overlay : m_tableListViewOverlays)
 	{
-		CClientDC dpiDc(this);
-		int dpiX = dpiDc.GetDeviceCaps(LOGPIXELSX);
-		if (dpiX <= 0) dpiX = 96;
-		auto twipsToPxX = [&](LONG twips) -> int {
-			return (int)MulDiv(twips, dpiX, 1440);
-		};
+		if (!overlay.gridCtrl || !::IsWindow(overlay.gridCtrl->GetSafeHwnd()))
+			continue;
+		// NOTE:
+		// Do not use IsWindowVisible() here. When the parent overlay window is hidden,
+		// child grids also report invisible, which can cause a self-lock:
+		// no table rect -> empty region -> keep overlay hidden forever.
+		if ((overlay.gridCtrl->GetStyle() & WS_VISIBLE) == 0)
+			continue;
 
-		for (const auto& row : m_tableOverlayRows)
-		{
-			if (row.tabStopCount <= 0)
-				continue;
-			POINTL pt{};
-			LRESULT r = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&pt, (LPARAM)row.start);
-			if (r == -1)
-				continue;
-			CPoint topLeft(static_cast<int>(pt.x), static_cast<int>(pt.y));
-			m_editContent.ClientToScreen(&topLeft);
-			m_mermaidOverlay.ScreenToClient(&topLeft);
-
-			int line = m_editContent.LineFromChar(row.start);
-			if (line < 0)
-				continue;
-			int nextLine = line + 1;
-			long nextLineStart = m_editContent.LineIndex(nextLine);
-			int rowHeight = 20;
-			if (nextLineStart >= 0)
-			{
-				POINTL ptNext{};
-				LRESULT rNext = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&ptNext, (LPARAM)nextLineStart);
-				if (rNext != -1)
-					rowHeight = max(18, (int)ptNext.y - (int)pt.y);
-			}
-			if (rowHeight <= 0)
-				rowHeight = 20;
-
-			int left = max(overlayClient.left + 2, topLeft.x);
-			LONG lastStopTwips = row.tabStopsTwips[min(row.tabStopCount, 32) - 1];
-			int right = left + twipsToPxX(lastStopTwips);
-			right = min(right, overlayClient.right - 2);
-			if (right <= left + 40)
-				continue;
-
-			CRect rc(left - 2, topLeft.y - 1, right + 2, topLeft.y + rowHeight + 1);
-			if (!CRect().IntersectRect(&rc, &overlayClient))
-				continue;
-			newRects.push_back(rc);
-		}
+		CRect rc;
+		overlay.gridCtrl->GetWindowRect(&rc);
+		m_mermaidOverlay.ScreenToClient(&rc);
+		if (!CRect().IntersectRect(&rc, &overlayClient))
+			continue;
+		if (rc.right <= rc.left + 1 || rc.bottom <= rc.top + 1)
+			continue;
+		newRects.push_back(rc);
 	}
 
 	// TOC overlays: include the expanded text region.
@@ -363,10 +343,18 @@ void CMarkdownEditorDlg::UpdateMermaidOverlayRegion(bool forceInvalidate)
 		// Keep a lightweight timer running as long as the document contains overlay-drawn
 		// elements (mermaid/HR/table). Otherwise, when the user scrolls to a diagram for the
 		// first time, the overlay won't re-appear until another interaction triggers a repaint.
-		if (m_mermaidOverlayTimer == 0)
+		if (needOverlayKeepaliveTimer)
 		{
-			m_mermaidOverlayTimer = kMermaidOverlayTimerId;
-			SetTimer(kMermaidOverlayTimerId, 200, NULL);
+			if (m_mermaidOverlayTimer == 0)
+			{
+				m_mermaidOverlayTimer = kMermaidOverlayTimerId;
+				SetTimer(kMermaidOverlayTimerId, 200, NULL);
+			}
+		}
+		else if (m_mermaidOverlayTimer != 0)
+		{
+			KillTimer(kMermaidOverlayTimerId);
+			m_mermaidOverlayTimer = 0;
 		}
 		return;
 	}
@@ -412,10 +400,18 @@ void CMarkdownEditorDlg::UpdateMermaidOverlayRegion(bool forceInvalidate)
 		m_lastMermaidOverlayRects = std::move(newRects);
 	}
 
-	if (m_mermaidOverlayTimer == 0)
+	if (needOverlayKeepaliveTimer)
 	{
-		m_mermaidOverlayTimer = kMermaidOverlayTimerId;
-		SetTimer(kMermaidOverlayTimerId, 250, NULL);
+		if (m_mermaidOverlayTimer == 0)
+		{
+			m_mermaidOverlayTimer = kMermaidOverlayTimerId;
+			SetTimer(kMermaidOverlayTimerId, 250, NULL);
+		}
+	}
+	else if (m_mermaidOverlayTimer != 0)
+	{
+		KillTimer(kMermaidOverlayTimerId);
+		m_mermaidOverlayTimer = 0;
 	}
 
 	m_mermaidOverlay.ShowWindow(SW_SHOW);
@@ -3156,175 +3152,1215 @@ void CMarkdownEditorDlg::DrawHorizontalRules(CDC& dc)
 	dc.SelectObject(oldPen);
 }
 
-void CMarkdownEditorDlg::DrawTableGrid(CDC& dc)
+void CMarkdownEditorDlg::ClearTableListViewOverlays()
 {
-	if (!::IsWindow(m_mermaidOverlay.GetSafeHwnd()) || !::IsWindow(m_editContent.GetSafeHwnd()))
+	if (::IsWindow(m_editContent.GetSafeHwnd()) && !m_tableSpaceAfterStarts.empty())
+	{
+		const bool oldSuppressChange = m_suppressChangeEvent;
+		m_suppressChangeEvent = true;
+		LONG selStart = 0;
+		LONG selEnd = 0;
+		m_editContent.GetSel(selStart, selEnd);
+		const int firstVisible = m_editContent.GetFirstVisibleLine();
+
+		PARAFORMAT2 reset{};
+		reset.cbSize = sizeof(reset);
+		reset.dwMask = PFM_SPACEAFTER;
+		reset.dySpaceAfter = 0;
+		for (long start : m_tableSpaceAfterStarts)
+		{
+			m_editContent.SetSel(start, start);
+			m_editContent.SetParaFormat(reset);
+		}
+		m_tableSpaceAfterStarts.clear();
+		m_editContent.SetSel(selStart, selEnd);
+		const int delta = firstVisible - m_editContent.GetFirstVisibleLine();
+		if (delta != 0)
+			m_editContent.LineScroll(delta);
+		m_suppressChangeEvent = oldSuppressChange;
+	}
+	m_tableSpaceAfterWidthPx = 0;
+	m_tableSpaceAfterZoom = 0;
+	m_tableSpaceAfterRowStamp = 0;
+
+	for (auto& overlay : m_tableListViewOverlays)
+	{
+		if (overlay.gridCtrl && ::IsWindow(overlay.gridCtrl->GetSafeHwnd()))
+			overlay.gridCtrl->DestroyWindow();
+	}
+	m_tableListViewOverlays.clear();
+	if (m_tableListViewFont.GetSafeHandle() != nullptr)
+		m_tableListViewFont.DeleteObject();
+	m_tableListViewFontZoom = 0;
+}
+
+void CMarkdownEditorDlg::UpdateTableListViewOverlays()
+{
+	auto resetTableSpaceAfter = [&]() {
+		if (!::IsWindow(m_editContent.GetSafeHwnd()))
+		{
+			m_tableSpaceAfterStarts.clear();
+			m_tableSpaceAfterWidthPx = 0;
+			m_tableSpaceAfterZoom = 0;
+			m_tableSpaceAfterRowStamp = 0;
+			return;
+		}
+		if (m_tableSpaceAfterStarts.empty())
+		{
+			m_tableSpaceAfterWidthPx = 0;
+			m_tableSpaceAfterZoom = 0;
+			m_tableSpaceAfterRowStamp = 0;
+			return;
+		}
+
+		LONG selStart = 0;
+		LONG selEnd = 0;
+		m_editContent.GetSel(selStart, selEnd);
+		const int firstVisible = m_editContent.GetFirstVisibleLine();
+		const bool oldSuppressChange = m_suppressChangeEvent;
+		m_suppressChangeEvent = true;
+		PARAFORMAT2 reset{};
+		reset.cbSize = sizeof(reset);
+		reset.dwMask = PFM_SPACEAFTER;
+		reset.dySpaceAfter = 0;
+		for (long start : m_tableSpaceAfterStarts)
+		{
+			m_editContent.SetSel(start, start);
+			m_editContent.SetParaFormat(reset);
+		}
+		m_tableSpaceAfterStarts.clear();
+		m_tableSpaceAfterWidthPx = 0;
+		m_tableSpaceAfterZoom = 0;
+		m_tableSpaceAfterRowStamp = 0;
+		m_editContent.SetSel(selStart, selEnd);
+		const int delta = firstVisible - m_editContent.GetFirstVisibleLine();
+		if (delta != 0)
+			m_editContent.LineScroll(delta);
+		m_suppressChangeEvent = oldSuppressChange;
+	};
+
+	if (!m_bMarkdownMode ||
+		!::IsWindow(m_mermaidOverlay.GetSafeHwnd()) || !::IsWindow(m_editContent.GetSafeHwnd()))
+	{
+		resetTableSpaceAfter();
+		for (auto& overlay : m_tableListViewOverlays)
+		{
+			if (overlay.gridCtrl && ::IsWindow(overlay.gridCtrl->GetSafeHwnd()))
+				overlay.gridCtrl->ShowWindow(SW_HIDE);
+		}
 		return;
-	if (!m_bMarkdownMode)
-		return;
+	}
+
 	if (m_tableOverlayRows.empty())
+	{
+		resetTableSpaceAfter();
+		for (auto& overlay : m_tableListViewOverlays)
+		{
+			if (overlay.gridCtrl && ::IsWindow(overlay.gridCtrl->GetSafeHwnd()))
+				overlay.gridCtrl->ShowWindow(SW_HIDE);
+		}
 		return;
+	}
 
 	CRect overlayClient;
 	m_mermaidOverlay.GetClientRect(&overlayClient);
-
-	COLORREF gridColor = m_themeDark ? RGB(75, 75, 75) : RGB(220, 220, 220);
-	CPen pen(PS_SOLID, 1, gridColor);
-	CPen* oldPen = dc.SelectObject(&pen);
-
-	CClientDC dpiDc(this);
-	int dpiX = dpiDc.GetDeviceCaps(LOGPIXELSX);
+	CClientDC textDc(&m_mermaidOverlay);
+	int dpiX = textDc.GetDeviceCaps(LOGPIXELSX);
+	int dpiY = textDc.GetDeviceCaps(LOGPIXELSY);
 	if (dpiX <= 0) dpiX = 96;
-	auto twipsToPxX = [&](LONG twips) -> int {
-		return (int)MulDiv(twips, dpiX, 1440);
-	};
+	if (dpiY <= 0) dpiY = 96;
 
-	// Group table rows by tab-stop signature and compute a stable left edge for each group.
-	// This avoids per-row left-edge jitter when some cells are very long.
-	struct TableKey
+	const int zoom = (std::max)(10, (std::min)(500, GetZoomPercent()));
+	const int spacingWidthPx = overlayClient.Width();
+	size_t spacingRowStamp = static_cast<size_t>(m_tableOverlayRows.size());
+	auto mixSpacingStamp = [&](size_t value) {
+		spacingRowStamp ^= value + static_cast<size_t>(0x9E3779B97F4A7C15ull) +
+			(spacingRowStamp << 6) + (spacingRowStamp >> 2);
+	};
+	for (const auto& row : m_tableOverlayRows)
 	{
-		int count = 0;
-		LONG stops[32]{};
-	};
-	auto keyLess = [](const TableKey& a, const TableKey& b) {
-		if (a.count != b.count) return a.count < b.count;
-		for (int i = 0; i < a.count && i < 32; ++i)
-		{
-			if (a.stops[i] != b.stops[i]) return a.stops[i] < b.stops[i];
-		}
-		return false;
-	};
-
-	std::map<TableKey, int, decltype(keyLess)> groupLeftPx(keyLess);
-	for (size_t rowIndex = 0; rowIndex < m_tableOverlayRows.size(); ++rowIndex)
+		mixSpacingStamp(static_cast<size_t>(static_cast<unsigned long long>(row.start) & 0xffffffffull));
+		mixSpacingStamp(static_cast<size_t>(static_cast<unsigned long long>(row.end) & 0xffffffffull));
+		mixSpacingStamp(static_cast<size_t>(row.tabStopCount));
+		for (int ti = 0; ti < row.tabStopCount && ti < 32; ++ti)
+			mixSpacingStamp(static_cast<size_t>(static_cast<unsigned long long>(row.tabStopsTwips[ti]) & 0xffffffffull));
+	}
+	const bool shouldUpdateTableSpaceAfter =
+		(m_tableSpaceAfterWidthPx != spacingWidthPx) ||
+		(m_tableSpaceAfterZoom != zoom) ||
+		(m_tableSpaceAfterRowStamp != spacingRowStamp);
+	// Recompute table spacing against a clean baseline (without previous table space-after),
+	// otherwise old spacing contaminates the new geometry and can shift table positions.
+	if (shouldUpdateTableSpaceAfter && !m_tableSpaceAfterStarts.empty())
+		resetTableSpaceAfter();
+	if (m_tableListViewFont.GetSafeHandle() == nullptr || m_tableListViewFontZoom != zoom)
 	{
-		const auto& row = m_tableOverlayRows[rowIndex];
-		if (row.tabStopCount <= 0)
-			continue;
-		TableKey k{};
-		k.count = min(row.tabStopCount, 32);
-		for (int i = 0; i < k.count; ++i)
-			k.stops[i] = row.tabStopsTwips[i];
-
-		POINTL pt{};
-		LRESULT r = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&pt, (LPARAM)row.start);
-		if (r == -1)
-			continue;
-		CPoint topLeft(static_cast<int>(pt.x), static_cast<int>(pt.y));
-		m_editContent.ClientToScreen(&topLeft);
-		m_mermaidOverlay.ScreenToClient(&topLeft);
-		int candidate = max(overlayClient.left + 2, topLeft.x);
-		auto it = groupLeftPx.find(k);
-		if (it == groupLeftPx.end())
-			groupLeftPx.emplace(k, candidate);
-		else
-			it->second = min(it->second, candidate);
+		if (m_tableListViewFont.GetSafeHandle() != nullptr)
+			m_tableListViewFont.DeleteObject();
+		LOGFONT lf{};
+		lf.lfCharSet = (m_normalFormat.bCharSet != 0) ? m_normalFormat.bCharSet : DEFAULT_CHARSET;
+		wcscpy_s(lf.lfFaceName, m_normalFormat.szFaceName[0] ? m_normalFormat.szFaceName : L"Microsoft YaHei");
+		lf.lfWeight = (m_normalFormat.dwEffects & CFE_BOLD) ? FW_BOLD : FW_NORMAL;
+		lf.lfItalic = (m_normalFormat.dwEffects & CFE_ITALIC) ? TRUE : FALSE;
+		lf.lfUnderline = (m_normalFormat.dwEffects & CFE_UNDERLINE) ? TRUE : FALSE;
+		lf.lfStrikeOut = (m_normalFormat.dwEffects & CFE_STRIKEOUT) ? TRUE : FALSE;
+		LONG twips = (m_normalFormat.yHeight > 0) ? m_normalFormat.yHeight : 220;
+		lf.lfHeight = -static_cast<LONG>(MulDiv(twips, dpiY, 1440));
+		lf.lfHeight = static_cast<LONG>(MulDiv(lf.lfHeight, zoom, 100));
+		if (lf.lfHeight == 0)
+			lf.lfHeight = -1;
+		m_tableListViewFont.CreateFontIndirect(&lf);
+		m_tableListViewFontZoom = zoom;
 	}
 
-	for (size_t rowIndex = 0; rowIndex < m_tableOverlayRows.size(); ++rowIndex)
-	{
-		const auto& row = m_tableOverlayRows[rowIndex];
-		if (row.tabStopCount <= 0)
-			continue;
-		TableKey k{};
-		k.count = min(row.tabStopCount, 32);
-		for (int i = 0; i < k.count; ++i)
-			k.stops[i] = row.tabStopsTwips[i];
+	CFont* oldDcFont = nullptr;
+	if (m_tableListViewFont.GetSafeHandle() != nullptr)
+		oldDcFont = textDc.SelectObject(&m_tableListViewFont);
+	TEXTMETRIC tm{};
+	textDc.GetTextMetrics(&tm);
+	const int baseLineHeightPx = static_cast<int>(
+		(std::max)(static_cast<LONG>(16), tm.tmHeight + tm.tmExternalLeading)
+	);
 
-		POINTL pt{};
-		LRESULT r = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&pt, (LPARAM)row.start);
-		if (r == -1)
-			continue;
-		CPoint topLeft(static_cast<int>(pt.x), static_cast<int>(pt.y));
-		m_editContent.ClientToScreen(&topLeft);
-		m_mermaidOverlay.ScreenToClient(&topLeft);
+	auto getRowSourceText = [&](long rowStart, long rowEnd) -> CString {
+		auto getRichEditLineText = [&](long pos) -> CString {
+			CString richLine;
+			if (!::IsWindow(m_editContent.GetSafeHwnd()))
+				return richLine;
+			const int line = m_editContent.LineFromChar(pos);
+			if (line < 0)
+				return richLine;
+			const long lineStart = m_editContent.LineIndex(line);
+			if (lineStart < 0)
+				return richLine;
+			int lineLen = m_editContent.LineLength(static_cast<int>(lineStart));
+			if (lineLen <= 0)
+				return richLine;
+			if (lineLen > 8192)
+				lineLen = 8192;
+			LPTSTR raw = richLine.GetBuffer(lineLen + 2);
+			*reinterpret_cast<WORD*>(raw) = static_cast<WORD>(lineLen);
+			const int copied = m_editContent.GetLine(line, raw, lineLen);
+			richLine.ReleaseBuffer((copied > 0) ? copied : 0);
+			return richLine;
+		};
 
-		int line = m_editContent.LineFromChar(row.start);
-		if (line < 0)
-			continue;
-		int nextLine = line + 1;
-		long nextLineStart = m_editContent.LineIndex(nextLine);
-		int rowHeight = 20;
-		if (nextLineStart >= 0)
+		auto looksLikeTableLine = [](const CString& text) -> bool {
+			return text.Find(_T('\t')) >= 0 || text.Find(_T('|')) >= 0;
+		};
+
+		CString lineBuf;
+		if (m_pendingSourceText.empty())
+			return getRichEditLineText(rowStart);
+
+		int sourceStart = MapRichIndexToSourceIndex(static_cast<int>(rowStart));
+		int sourceEnd = MapRichIndexToSourceIndex(static_cast<int>(rowEnd));
+		if (sourceStart < 0)
+			sourceStart = static_cast<int>(rowStart);
+		if (sourceEnd < sourceStart)
+			sourceEnd = sourceStart;
+
+		const int total = static_cast<int>(m_pendingSourceText.size());
+		if (sourceStart < 0)
+			sourceStart = 0;
+		if (sourceStart > total)
+			sourceStart = total;
+		if (sourceEnd > total)
+			sourceEnd = total;
+
+		size_t s = static_cast<size_t>(sourceStart);
+		size_t e = static_cast<size_t>(sourceEnd);
+		while (s > 0)
 		{
-			POINTL ptNext{};
-			LRESULT rNext = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&ptNext, (LPARAM)nextLineStart);
-			if (rNext != -1)
-				rowHeight = max(18, (int)ptNext.y - (int)pt.y);
+			const wchar_t prev = m_pendingSourceText[s - 1];
+			if (prev == L'\r' || prev == L'\n')
+				break;
+			--s;
 		}
-		// Prefer the next table row's top as current row bottom to avoid gaps caused by
-		// hidden table-separator lines between header and first data row.
-		if (rowIndex + 1 < m_tableOverlayRows.size())
+		while (e < m_pendingSourceText.size())
 		{
-			const auto& nextRow = m_tableOverlayRows[rowIndex + 1];
-			if (nextRow.tabStopCount > 0)
-			{
-				TableKey nextKey{};
-				nextKey.count = min(nextRow.tabStopCount, 32);
-				for (int i = 0; i < nextKey.count; ++i)
-					nextKey.stops[i] = nextRow.tabStopsTwips[i];
+			const wchar_t ch = m_pendingSourceText[e];
+			if (ch == L'\r' || ch == L'\n')
+				break;
+			++e;
+		}
 
-				if (!keyLess(k, nextKey) && !keyLess(nextKey, k))
+		if (e > s)
+		{
+			const std::wstring oneLine = m_pendingSourceText.substr(s, e - s);
+			lineBuf = oneLine.c_str();
+		}
+		if (!looksLikeTableLine(lineBuf))
+		{
+			CString richLine = getRichEditLineText(rowStart);
+			if (!richLine.IsEmpty())
+				lineBuf = richLine;
+		}
+		return lineBuf;
+	};
+
+	auto isTableSeparatorLineText = [&](const CString& lineText) -> bool {
+		CString t = lineText;
+		t.Trim();
+		if (t.IsEmpty())
+			return false;
+		int dashCount = 0;
+		bool hasPipe = false;
+		for (int i = 0; i < t.GetLength(); ++i)
+		{
+			const TCHAR ch = t[i];
+			if (ch == _T('-'))
+			{
+				++dashCount;
+				continue;
+			}
+			if (ch == _T('|'))
+			{
+				hasPipe = true;
+				continue;
+			}
+			if (ch == _T(':') || ch == _T(' ') || ch == _T('\t'))
+				continue;
+			return false;
+		}
+		return hasPipe && dashCount >= 3;
+	};
+
+	auto splitDisplayTableCells = [&](const CString& lineText, int expectedColumns) -> std::vector<CString> {
+		std::vector<CString> cells;
+		if (expectedColumns <= 0)
+			return cells;
+		cells.reserve(expectedColumns);
+
+		// 首选 TAB 拆分（RenderText 会将表格分隔符转换为 TAB）。
+		if (lineText.Find(_T('\t')) >= 0)
+		{
+			CString current;
+			for (int i = 0; i < lineText.GetLength(); ++i)
+			{
+				const TCHAR ch = lineText[i];
+				if (ch == _T('\t'))
 				{
-					POINTL ptNextRow{};
-					LRESULT rNextRow = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&ptNextRow, (LPARAM)nextRow.start);
-					if (rNextRow != -1)
+					current.Trim();
+					cells.push_back(current);
+					current.Empty();
+					continue;
+				}
+				if (ch == _T('\r') || ch == _T('\n'))
+					continue;
+				current.AppendChar(ch);
+			}
+			current.Trim();
+			cells.push_back(current);
+		}
+		else
+		{
+			// 兜底：若 TAB 变换未生效，按 Markdown 管道符规则拆分，避免中间列空白。
+			CString trimmed = lineText;
+			trimmed.Trim();
+			if (!trimmed.IsEmpty())
+			{
+				int s = 0;
+				int e = trimmed.GetLength();
+				if (trimmed[s] == _T('|'))
+					++s;
+				if (e > s && trimmed[e - 1] == _T('|'))
+					--e;
+
+				CString current;
+				bool inCodeSpan = false;
+				for (int i = s; i < e; ++i)
+				{
+					const TCHAR ch = trimmed[i];
+					if (ch == _T('`'))
 					{
-						const int inferredHeight = (int)ptNextRow.y - (int)pt.y;
-						if (inferredHeight > 0)
-							rowHeight = max(18, inferredHeight);
+						bool escaped = false;
+						int slashCount = 0;
+						for (int p = i - 1; p >= s && trimmed[p] == _T('\\'); --p)
+							++slashCount;
+						escaped = ((slashCount % 2) == 1);
+						if (!escaped)
+							inCodeSpan = !inCodeSpan;
+						current.AppendChar(ch);
+						continue;
+					}
+
+					bool isPipeSplitter = false;
+					if (ch == _T('|') && !inCodeSpan)
+					{
+						int slashCount = 0;
+						for (int p = i - 1; p >= s && trimmed[p] == _T('\\'); --p)
+							++slashCount;
+						const bool escaped = ((slashCount % 2) == 1);
+						isPipeSplitter = !escaped;
+					}
+
+					if (isPipeSplitter)
+					{
+						current.Trim();
+						cells.push_back(current);
+						current.Empty();
+						continue;
+					}
+					if (ch == _T('\r') || ch == _T('\n'))
+						continue;
+					current.AppendChar(ch);
+				}
+				current.Trim();
+				cells.push_back(current);
+			}
+		}
+		if ((int)cells.size() > expectedColumns)
+			cells.resize(expectedColumns);
+		while ((int)cells.size() < expectedColumns)
+			cells.push_back(CString());
+		return cells;
+	};
+
+	auto normalizeTableCellDisplayText = [&](const CString& input) -> CString {
+		CString src = input;
+		src.Replace(_T("\r"), _T(" "));
+		src.Replace(_T("\n"), _T(" "));
+		src.Trim();
+		if (src.IsEmpty())
+			return src;
+
+		CString out;
+		const int n = src.GetLength();
+		for (int i = 0; i < n; )
+		{
+			const TCHAR ch = src[i];
+			if (ch == _T('['))
+			{
+				int closeBracket = -1;
+				for (int j = i + 1; j < n; ++j)
+				{
+					if (src[j] == _T(']'))
+					{
+						closeBracket = j;
+						break;
+					}
+				}
+				if (closeBracket > i && closeBracket + 1 < n && src[closeBracket + 1] == _T('('))
+				{
+					int closeParen = -1;
+					for (int k = closeBracket + 2; k < n; ++k)
+					{
+						if (src[k] == _T(')'))
+						{
+							closeParen = k;
+							break;
+						}
+					}
+					if (closeParen > closeBracket + 2)
+					{
+						out += src.Mid(i + 1, closeBracket - i - 1);
+						i = closeParen + 1;
+						continue;
 					}
 				}
 			}
-		}
-		if (rowHeight <= 0)
-			rowHeight = 20;
-		const int yTop = topLeft.y;
-		const int yBottom = yTop + rowHeight; // exclusive
-		const int yBottomLine = max(yTop, yBottom - 1);
-		if (yBottom < overlayClient.top || yTop > overlayClient.bottom)
-			continue;
-
-		// Align the table grid with actual text layout.
-		int left = max(overlayClient.left + 2, topLeft.x);
-		auto itLeft = groupLeftPx.find(k);
-		if (itLeft != groupLeftPx.end())
-			left = itLeft->second;
-		LONG lastStopTwips = row.tabStopsTwips[min(row.tabStopCount, 32) - 1];
-		int right = left + twipsToPxX(lastStopTwips);
-		right = min(right, overlayClient.right - 2);
-		if (right <= left + 40)
-			continue;
-
-		const int leftLine = max(overlayClient.left + 1, left - 2);
-		const int rightLine = min(overlayClient.right - 1, max(leftLine + 1, right - 1));
-
-		// Horizontal line at top + bottom of each row.
-		dc.MoveTo(leftLine, yTop);
-		dc.LineTo(rightLine + 1, yTop);
-		dc.MoveTo(leftLine, yBottomLine);
-		dc.LineTo(rightLine + 1, yBottomLine);
-
-		// Vertical lines at tab stop positions (exclude the last stop; right border is drawn separately).
-		const int separatorCount = max(0, row.tabStopCount - 1);
-		for (int i = 0; i < separatorCount; ++i)
-		{
-			int x = left + twipsToPxX(row.tabStopsTwips[i]);
-			x -= 2; // keep separator slightly left so it does not touch text edge
-			if (x <= leftLine || x >= rightLine)
+			if (ch == _T('`'))
+			{
+				++i;
 				continue;
-			dc.MoveTo(x, yTop);
-			dc.LineTo(x, yBottomLine + 1);
+			}
+			out.AppendChar(ch);
+			++i;
+		}
+		out.Trim();
+		return out;
+	};
+
+	auto measureWrappedCellHeightPx = [&](const CString& input, int widthPx) -> int {
+		int textWidth = widthPx - 8;
+		if (textWidth < 8)
+			textWidth = 8;
+
+		CString content = input;
+		content.Replace(_T("\r"), _T(" "));
+		content.Replace(_T("\n"), _T(" "));
+		content.Trim();
+		if (content.IsEmpty())
+			return (std::max)(baseLineHeightPx + 8, 22);
+
+		CRect calcRect(0, 0, textWidth, 1);
+		textDc.DrawText(content, &calcRect,
+			DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX | DT_EDITCONTROL | DT_CALCRECT);
+		int textHeight = (std::max)(baseLineHeightPx, calcRect.Height());
+
+		const CSize singleLine = textDc.GetTextExtent(content);
+		if (singleLine.cx > textWidth)
+		{
+			const int pixelLines = (singleLine.cx + textWidth - 1) / textWidth;
+			if (pixelLines > 1)
+				textHeight = (std::max)(textHeight, pixelLines * baseLineHeightPx);
 		}
 
-		// Draw right/left borders for all rows (including header).
-		dc.MoveTo(rightLine, yTop);
-		dc.LineTo(rightLine, yBottomLine + 1);
-		dc.MoveTo(leftLine, yTop);
-		dc.LineTo(leftLine, yBottomLine + 1);
+		const int avgCharWidth = (tm.tmAveCharWidth > 0) ? tm.tmAveCharWidth : 8;
+		const int charsPerLine = (std::max)(4, textWidth / avgCharWidth);
+		const int charLines = (content.GetLength() + charsPerLine - 1) / charsPerLine;
+		if (charLines > 1)
+			textHeight = (std::max)(textHeight, charLines * baseLineHeightPx);
+
+		// Give one extra baseline as safety for mixed CJK/Latin wrapping differences.
+		const int rowHeight = textHeight + baseLineHeightPx + 8;
+		return (std::max)(22, rowHeight);
+	};
+
+	auto tryGetRowTopLeft = [&](long rowStart, long rowEnd, CPoint& outTopLeft) -> bool {
+		auto tryApproxTopLeftByLine = [&](long pos, CPoint& approxTopLeft) -> bool {
+			const int line = m_editContent.LineFromChar(pos);
+			if (line < 0)
+				return false;
+
+			CRect editFormatRect;
+			m_editContent.GetRect(&editFormatRect);
+			const int firstVisibleLine = m_editContent.GetFirstVisibleLine();
+
+			CClientDC editDc(&m_editContent);
+			CFont* oldFont = nullptr;
+			if (m_tableListViewFont.GetSafeHandle() != nullptr)
+				oldFont = editDc.SelectObject(&m_tableListViewFont);
+			TEXTMETRIC tm{};
+			editDc.GetTextMetrics(&tm);
+			if (oldFont != nullptr)
+				editDc.SelectObject(oldFont);
+			int lineHeight = tm.tmHeight + tm.tmExternalLeading;
+			if (lineHeight < 16)
+				lineHeight = 16;
+
+			const int y = editFormatRect.top + (line - firstVisibleLine) * lineHeight;
+			approxTopLeft = CPoint(editFormatRect.left, y);
+			m_editContent.ClientToScreen(&approxTopLeft);
+			m_mermaidOverlay.ScreenToClient(&approxTopLeft);
+			return true;
+		};
+
+		auto tryPos = [&](long index, POINTL& outPt) -> bool {
+			if (index < 0)
+				return false;
+			POINTL pt{};
+			LRESULT r = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&pt, (LPARAM)index);
+			if (r == -1)
+				return false;
+			outPt = pt;
+			return true;
+		};
+
+		POINTL pt{};
+		if (!tryPos(rowStart, pt))
+		{
+			const long s = (std::max)(0L, rowStart);
+			long e = rowEnd;
+			if (e < s)
+				e = s;
+
+			bool found = false;
+			const long headProbeEnd = (std::min)(e, s + 256);
+			for (long pos = s + 1; pos < headProbeEnd; ++pos)
+			{
+				if (tryPos(pos, pt))
+				{
+					found = true;
+					break;
+				}
+			}
+
+			if (!found && e > s)
+			{
+				const long tailProbeStart = (std::max)(s, e - 64);
+				for (long pos = tailProbeStart; pos < e; ++pos)
+				{
+					if (tryPos(pos, pt))
+					{
+						found = true;
+						break;
+					}
+				}
+			}
+
+			if (!found)
+			{
+				const int line = m_editContent.LineFromChar(rowStart);
+				if (line >= 0)
+				{
+					const long lineStart = m_editContent.LineIndex(line);
+					if (lineStart >= 0)
+						found = tryPos(lineStart, pt);
+				}
+			}
+
+			if (!found)
+			{
+				if (tryApproxTopLeftByLine(rowStart, outTopLeft))
+					return true;
+				return false;
+			}
+		}
+
+		outTopLeft = CPoint((int)pt.x, (int)pt.y);
+		m_editContent.ClientToScreen(&outTopLeft);
+		m_mermaidOverlay.ScreenToClient(&outTopLeft);
+		return true;
+	};
+
+	// Fast path for scroll-only updates: keep existing table content and only move bound grid windows.
+	if (!shouldUpdateTableSpaceAfter && !m_tableListViewOverlays.empty())
+	{
+		bool hasActiveOverlay = false;
+		for (auto& overlay : m_tableListViewOverlays)
+		{
+			if (!overlay.gridCtrl || !::IsWindow(overlay.gridCtrl->GetSafeHwnd()))
+				continue;
+			if (!overlay.active || overlay.anchorRowStart < 0 || overlay.cachedRight <= overlay.cachedLeft)
+			{
+				overlay.gridCtrl->ShowWindow(SW_HIDE);
+				continue;
+			}
+
+			hasActiveOverlay = true;
+			CPoint topLeft;
+			if (!tryGetRowTopLeft(overlay.anchorRowStart, overlay.anchorRowStart, topLeft))
+			{
+				overlay.gridCtrl->ShowWindow(SW_HIDE);
+				continue;
+			}
+
+			const int targetHeight = (std::max)(24, overlay.cachedHeight);
+			CRect targetRect(overlay.cachedLeft, topLeft.y, overlay.cachedRight, topLeft.y + targetHeight);
+			CRect visibleRect = targetRect;
+			visibleRect.IntersectRect(&visibleRect, &overlayClient);
+			if (visibleRect.right <= visibleRect.left + 20 || visibleRect.bottom <= visibleRect.top + 8)
+			{
+				overlay.gridCtrl->ShowWindow(SW_HIDE);
+				continue;
+			}
+
+			CRect oldRect;
+			overlay.gridCtrl->GetWindowRect(&oldRect);
+			m_mermaidOverlay.ScreenToClient(&oldRect);
+			if (oldRect != targetRect)
+				overlay.gridCtrl->MoveWindow(targetRect);
+			overlay.gridCtrl->ShowWindow(SW_SHOW);
+		}
+		if (hasActiveOverlay)
+			return;
 	}
 
-	dc.SelectObject(oldPen);
+	struct TableListViewModel
+	{
+		CRect rect;
+		std::vector<int> colWidths;
+		std::vector<CString> headers;
+		std::vector<std::vector<CString>> rows;
+		std::vector<COLORREF> rowBackColors;
+		std::vector<long> richRowStarts;
+		int headerHeightPx = 24;
+		std::vector<int> rowHeights;
+	};
+
+	std::vector<TableListViewModel> models;
+	models.reserve(m_tableOverlayRows.size() / 2 + 1);
+
+	size_t i = 0;
+	while (i < m_tableOverlayRows.size())
+	{
+		size_t start = i;
+		size_t end = i;
+		while (end + 1 < m_tableOverlayRows.size() && !m_tableOverlayRows[end + 1].isHeader)
+			++end;
+
+		const auto& firstRow = m_tableOverlayRows[start];
+		const int columnCount = (std::max)(1, (std::min)(firstRow.tabStopCount, 32));
+		if (columnCount <= 0)
+		{
+			i = end + 1;
+			continue;
+		}
+
+		int left = INT_MAX;
+		int right = INT_MIN;
+		int top = INT_MAX;
+		int verticalScrollReservePx = 0;
+		{
+			bool reserveForVScroll = ((m_editContent.GetStyle() & WS_VSCROLL) != 0);
+			SCROLLINFO si{};
+			si.cbSize = sizeof(si);
+			if (m_editContent.GetScrollInfo(SB_VERT, &si, SIF_RANGE | SIF_PAGE))
+			{
+				const int range = si.nMax - si.nMin + 1;
+				if (si.nPage > 0 && range > static_cast<int>(si.nPage))
+					reserveForVScroll = true;
+			}
+			if (reserveForVScroll)
+				verticalScrollReservePx = (std::max)(0, ::GetSystemMetrics(SM_CXVSCROLL));
+		}
+		for (size_t ri = start; ri <= end; ++ri)
+		{
+			const auto& row = m_tableOverlayRows[ri];
+			CPoint topLeft;
+			if (!tryGetRowTopLeft(row.start, row.end, topLeft))
+				continue;
+
+			const int rowLeft = overlayClient.left + 2;
+			int rowRight = static_cast<int>(overlayClient.right) - 2 - verticalScrollReservePx;
+			if (rowRight <= rowLeft + 20)
+				continue;
+
+			left = (std::min)(left, rowLeft);
+			right = (std::max)(right, rowRight);
+			top = (std::min)(top, static_cast<int>(topLeft.y));
+		}
+
+		if (left == INT_MAX || right <= left)
+		{
+			CPoint approxTopLeft;
+			if (tryGetRowTopLeft(firstRow.start, firstRow.end, approxTopLeft))
+			{
+				left = overlayClient.left + 2;
+				right = overlayClient.right - 2 - verticalScrollReservePx;
+				top = approxTopLeft.y;
+			}
+		}
+
+		if (left == INT_MAX || right <= left)
+		{
+			i = end + 1;
+			continue;
+		}
+
+		TableListViewModel model{};
+		model.rect = CRect(left, top, right, top + 1);
+		if (model.rect.right <= model.rect.left + 20)
+		{
+			i = end + 1;
+			continue;
+		}
+		model.richRowStarts.push_back(firstRow.start);
+
+		model.colWidths.resize((size_t)columnCount, 60);
+		std::vector<LONG> sourceColTwips((size_t)columnCount, 1);
+		LONG sourceTotalTwips = 0;
+		LONG prevStop = 0;
+		for (int ci = 0; ci < columnCount; ++ci)
+		{
+			LONG stop = firstRow.tabStopsTwips[ci];
+			LONG colTwips = stop - prevStop;
+			prevStop = stop;
+			colTwips = (std::max)(static_cast<LONG>(1), colTwips);
+			sourceColTwips[(size_t)ci] = colTwips;
+			sourceTotalTwips += colTwips;
+		}
+		if (sourceTotalTwips <= 0)
+			sourceTotalTwips = static_cast<LONG>(columnCount);
+
+		int tableClientWidth = model.rect.Width() - 2;
+		if (tableClientWidth < 40)
+			tableClientWidth = 40;
+		int minColWidth = 56;
+		if (tableClientWidth < minColWidth * columnCount)
+		{
+			minColWidth = tableClientWidth / columnCount;
+			if (minColWidth < 20)
+				minColWidth = 20;
+		}
+
+		int remainingPx = tableClientWidth;
+		LONG remainingTwips = sourceTotalTwips;
+		for (int ci = 0; ci < columnCount; ++ci)
+		{
+			const int colsLeft = columnCount - ci;
+			const int minReservedForOthers = minColWidth * (colsLeft - 1);
+			int widthPx = minColWidth;
+
+			if (ci == columnCount - 1)
+			{
+				widthPx = remainingPx;
+			}
+			else
+			{
+				const int distributablePx = (std::max)(0, remainingPx - minColWidth * colsLeft);
+				int weighted = 0;
+				if (remainingTwips > 0 && distributablePx > 0)
+				{
+					weighted = MulDiv(distributablePx, static_cast<int>(sourceColTwips[(size_t)ci]),
+						static_cast<int>(remainingTwips));
+				}
+				widthPx += weighted;
+				const int maxAllowed = (std::max)(minColWidth, remainingPx - minReservedForOthers);
+				if (widthPx > maxAllowed)
+					widthPx = maxAllowed;
+				if (widthPx < minColWidth)
+					widthPx = minColWidth;
+			}
+
+			if (widthPx > remainingPx)
+				widthPx = remainingPx;
+			if (widthPx < 1)
+				widthPx = 1;
+			model.colWidths[(size_t)ci] = widthPx;
+			remainingPx -= widthPx;
+			remainingTwips -= sourceColTwips[(size_t)ci];
+			if (remainingTwips < 0)
+				remainingTwips = 0;
+		}
+		if (!model.colWidths.empty() && remainingPx != 0)
+		{
+			const size_t last = model.colWidths.size() - 1;
+			model.colWidths[last] += remainingPx;
+			if (model.colWidths[last] < 1)
+				model.colWidths[last] = 1;
+		}
+
+		for (size_t ri = start; ri <= end; ++ri)
+		{
+			const auto& row = m_tableOverlayRows[ri];
+			CString lineText = getRowSourceText(row.start, row.end);
+			if (!row.isHeader && isTableSeparatorLineText(lineText))
+				continue;
+			auto cells = splitDisplayTableCells(lineText, columnCount);
+			for (int ci = 0; ci < columnCount; ++ci)
+			{
+				CString text = normalizeTableCellDisplayText(cells[(size_t)ci]);
+				if (row.isHeader && model.headers.empty())
+					model.headers.push_back(text);
+				else if (ri == start && row.isHeader && model.headers.size() < (size_t)columnCount)
+					model.headers.push_back(text);
+			}
+
+			if (!(ri == start && row.isHeader))
+			{
+				std::vector<CString> oneRow;
+				oneRow.reserve((size_t)columnCount);
+				for (int ci = 0; ci < columnCount; ++ci)
+				{
+					CString text = normalizeTableCellDisplayText(cells[(size_t)ci]);
+					oneRow.push_back(text);
+				}
+				model.rows.push_back(std::move(oneRow));
+				model.rowBackColors.push_back(row.backColor);
+				model.richRowStarts.push_back(row.start);
+			}
+		}
+
+		while ((int)model.headers.size() < columnCount)
+		{
+			CString title;
+			title.Format(_T("列%d"), (int)model.headers.size() + 1);
+			model.headers.push_back(title);
+		}
+		if (model.rows.empty())
+		{
+			model.rows.push_back(std::vector<CString>((size_t)columnCount));
+			model.rowBackColors.push_back(m_themeBackground);
+		}
+
+		models.push_back(std::move(model));
+
+		i = end + 1;
+	}
+
+	if (oldDcFont != nullptr)
+		textDc.SelectObject(oldDcFont);
+
+	while (m_tableListViewOverlays.size() < models.size())
+	{
+		TableListViewOverlay overlay{};
+		overlay.gridCtrl = std::make_unique<CTableGridOverlayCtrl>();
+		const UINT ctrlId = 5000u + (UINT)m_tableListViewOverlays.size();
+		const DWORD style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+		overlay.gridCtrl->Create(CRect(0, 0, 0, 0), &m_mermaidOverlay, ctrlId, style);
+		overlay.gridCtrl->SetHost(this);
+		overlay.gridCtrl->SetEditable(FALSE);
+		overlay.gridCtrl->EnableSelection(FALSE);
+		overlay.gridCtrl->SetListMode(FALSE);
+		overlay.gridCtrl->SetSingleRowSelection(FALSE);
+		overlay.gridCtrl->SetFixedRowSelection(FALSE);
+		overlay.gridCtrl->SetFixedColumnSelection(FALSE);
+		overlay.gridCtrl->SetRowResize(FALSE);
+		overlay.gridCtrl->SetColumnResize(FALSE);
+		overlay.gridCtrl->SetHeaderSort(FALSE);
+		overlay.gridCtrl->SetTrackFocusCell(FALSE);
+		overlay.gridCtrl->SetFrameFocusCell(FALSE);
+		overlay.gridCtrl->SetDoubleBuffering(TRUE);
+		overlay.gridCtrl->SetDefCellMargin(4);
+		overlay.gridCtrl->SetGridLines(GVL_BOTH);
+		overlay.gridCtrl->ModifyStyle(WS_BORDER, 0, SWP_FRAMECHANGED);
+		overlay.gridCtrl->ModifyStyleEx(WS_EX_CLIENTEDGE | WS_EX_STATICEDGE | WS_EX_WINDOWEDGE,
+			0, SWP_FRAMECHANGED);
+		m_tableListViewOverlays.push_back(std::move(overlay));
+	}
+
+	std::vector<std::pair<long, LONG>> pendingTableSpaceAfter;
+	if (shouldUpdateTableSpaceAfter)
+		pendingTableSpaceAfter.reserve(m_tableOverlayRows.size());
+
+	auto measureBaseRowHeightPx = [&](long rowStart) -> int {
+		const int line = m_editContent.LineFromChar(rowStart);
+		if (line < 0)
+			return (std::max)(18, baseLineHeightPx + 2);
+
+		const long lineStart = m_editContent.LineIndex(line);
+		const long nextLineStart = m_editContent.LineIndex(line + 1);
+		if (lineStart >= 0 && nextLineStart >= 0)
+		{
+			POINTL pt{};
+			POINTL ptNext{};
+			LRESULT r = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&pt, (LPARAM)lineStart);
+			LRESULT rNext = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&ptNext, (LPARAM)nextLineStart);
+			if (r != -1 && rNext != -1)
+			{
+				const int delta = static_cast<int>(ptNext.y - pt.y);
+				if (delta > 0)
+					return (std::max)(18, delta);
+			}
+		}
+		return (std::max)(18, baseLineHeightPx + 2);
+	};
+
+	auto measureDisplayRowBaseHeightPx = [&](const TableListViewModel& model, size_t displayRow) -> int {
+		if (displayRow < model.richRowStarts.size())
+		{
+			const long rowStart = model.richRowStarts[displayRow];
+			if (displayRow + 1 < model.richRowStarts.size())
+			{
+				POINTL pt{};
+				POINTL ptNext{};
+				LRESULT r = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&pt, (LPARAM)rowStart);
+				LRESULT rNext = m_editContent.SendMessage(EM_POSFROMCHAR, (WPARAM)&ptNext,
+					(LPARAM)model.richRowStarts[displayRow + 1]);
+				if (r != -1 && rNext != -1)
+				{
+					const int delta = static_cast<int>(ptNext.y - pt.y);
+					if (delta > 0)
+						return (std::max)(18, delta);
+				}
+			}
+			return measureBaseRowHeightPx(rowStart);
+		}
+		return (std::max)(18, baseLineHeightPx + 2);
+	};
+
+	for (size_t oi = 0; oi < m_tableListViewOverlays.size(); ++oi)
+	{
+		auto& overlay = m_tableListViewOverlays[oi];
+		if (!overlay.gridCtrl || !::IsWindow(overlay.gridCtrl->GetSafeHwnd()))
+			continue;
+		if (oi >= models.size())
+		{
+			overlay.active = false;
+			overlay.anchorRowStart = -1;
+			overlay.cachedLeft = 0;
+			overlay.cachedRight = 0;
+			overlay.cachedHeight = 0;
+			overlay.gridCtrl->ShowWindow(SW_HIDE);
+			continue;
+		}
+
+		auto& model = models[oi];
+		CGridCtrl* grid = overlay.gridCtrl.get();
+
+		const COLORREF headerBack = (m_tableHeaderFormat.crBackColor == CLR_INVALID)
+			? m_themeBackground
+			: m_tableHeaderFormat.crBackColor;
+		const COLORREF gridColor = m_themeDark ? RGB(75, 75, 75) : RGB(220, 220, 220);
+		grid->SetBkColor(m_themeBackground);
+		grid->SetTextColor(m_themeForeground);
+		grid->SetTextBkColor(m_themeBackground);
+		grid->SetFixedTextColor(m_themeForeground);
+		grid->SetFixedBkColor(headerBack);
+		grid->SetGridLineColor(gridColor);
+
+		std::vector<int> finalColWidths = model.colWidths;
+		if (!finalColWidths.empty())
+		{
+			int availableWidth = model.rect.Width() - 4;
+			if (availableWidth < 20)
+				availableWidth = 20;
+
+			const int colCount = static_cast<int>(finalColWidths.size());
+			int minColWidth = 20;
+			if (availableWidth < minColWidth * colCount)
+			{
+				minColWidth = availableWidth / colCount;
+				if (minColWidth < 8)
+					minColWidth = 8;
+			}
+
+			int sourceTotal = 0;
+			for (int w : finalColWidths)
+				sourceTotal += (w > 0 ? w : 1);
+			if (sourceTotal <= 0)
+				sourceTotal = colCount;
+
+			int remainPx = availableWidth;
+			int remainWeight = sourceTotal;
+			for (int ci = 0; ci < colCount; ++ci)
+			{
+				int widthPx = minColWidth;
+				const int sourceWeight = (finalColWidths[(size_t)ci] > 0) ? finalColWidths[(size_t)ci] : 1;
+				if (ci == colCount - 1)
+				{
+					widthPx = remainPx;
+				}
+				else
+				{
+					const int colsLeft = colCount - ci;
+					const int minReserve = minColWidth * (colsLeft - 1);
+					const int distributable = (std::max)(0, remainPx - minColWidth * colsLeft);
+					int weighted = 0;
+					if (remainWeight > 0 && distributable > 0)
+						weighted = MulDiv(distributable, sourceWeight, remainWeight);
+					widthPx += weighted;
+					const int maxAllowed = (std::max)(minColWidth, remainPx - minReserve);
+					if (widthPx > maxAllowed)
+						widthPx = maxAllowed;
+					if (widthPx < minColWidth)
+						widthPx = minColWidth;
+				}
+
+				if (widthPx > remainPx)
+					widthPx = remainPx;
+				if (widthPx < 1)
+					widthPx = 1;
+				finalColWidths[(size_t)ci] = widthPx;
+				remainPx -= widthPx;
+				remainWeight -= sourceWeight;
+				if (remainWeight < 0)
+					remainWeight = 0;
+			}
+
+			if (remainPx != 0)
+			{
+				const size_t last = finalColWidths.size() - 1;
+				finalColWidths[last] += remainPx;
+				if (finalColWidths[last] < 1)
+					finalColWidths[last] = 1;
+			}
+		}
+
+		const int colCount = static_cast<int>(model.colWidths.size());
+		const int rowCount = static_cast<int>(model.rows.size());
+		const UINT cellFmt = DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX;
+
+		auto normalizeWrapFormat = [&](UINT fmt) -> UINT {
+			fmt &= ~(DT_SINGLELINE | DT_VCENTER | DT_BOTTOM | DT_END_ELLIPSIS |
+				DT_PATH_ELLIPSIS | DT_WORD_ELLIPSIS);
+			fmt |= DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX;
+			return fmt;
+		};
+
+		auto measureRowHeightByWidths = [&](const std::vector<CString>& row) -> int {
+			int rowHeight = (std::max)(22, baseLineHeightPx + 6);
+			for (int ci = 0; ci < colCount; ++ci)
+			{
+				CString text;
+				if (ci < static_cast<int>(row.size()))
+					text = row[static_cast<size_t>(ci)];
+				const int widthPx = finalColWidths.empty() ? model.colWidths[static_cast<size_t>(ci)]
+					: finalColWidths[static_cast<size_t>(ci)];
+				const int cellHeight = measureWrappedCellHeightPx(text, widthPx);
+				rowHeight = (std::max)(rowHeight, cellHeight);
+			}
+			return rowHeight;
+		};
+
+		int headerHeightPx = (std::max)(24, baseLineHeightPx + 8);
+		for (int ci = 0; ci < colCount; ++ci)
+		{
+			const int widthPx = finalColWidths.empty() ? model.colWidths[static_cast<size_t>(ci)]
+				: finalColWidths[static_cast<size_t>(ci)];
+			headerHeightPx = (std::max)(headerHeightPx,
+				measureWrappedCellHeightPx(model.headers[static_cast<size_t>(ci)], widthPx));
+		}
+
+		std::vector<int> finalRowHeights;
+		finalRowHeights.reserve(static_cast<size_t>(rowCount));
+		int contentHeight = headerHeightPx + 2;
+		for (int ri = 0; ri < rowCount; ++ri)
+		{
+			const int rowHeight = measureRowHeightByWidths(model.rows[static_cast<size_t>(ri)]);
+			finalRowHeights.push_back(rowHeight);
+			contentHeight += rowHeight;
+		}
+		if (shouldUpdateTableSpaceAfter)
+		{
+			const size_t displayRows = static_cast<size_t>(rowCount + 1);
+			const size_t usableRows = (std::min)(displayRows, model.richRowStarts.size());
+			for (size_t displayRow = 0; displayRow < usableRows; ++displayRow)
+			{
+				const long rowStart = model.richRowStarts[displayRow];
+				const int desiredHeight = (displayRow == 0)
+					? headerHeightPx
+					: finalRowHeights[displayRow - 1];
+				const int baseHeight = measureDisplayRowBaseHeightPx(model, displayRow);
+				const int extraPx = (std::max)(0, desiredHeight - baseHeight);
+				if (extraPx <= 0)
+					continue;
+				LONG spaceAfter = static_cast<LONG>(MulDiv(extraPx, 1440, dpiY));
+				if (spaceAfter <= 0)
+					continue;
+				pendingTableSpaceAfter.emplace_back(rowStart, spaceAfter);
+			}
+		}
+
+		CRect finalRect = model.rect;
+		finalRect.bottom = finalRect.top + (std::max)(contentHeight, 24);
+		overlay.active = true;
+		overlay.anchorRowStart = model.richRowStarts.empty() ? -1 : model.richRowStarts.front();
+		overlay.cachedLeft = finalRect.left;
+		overlay.cachedRight = finalRect.right;
+		overlay.cachedHeight = finalRect.Height();
+		CRect visibleRect = finalRect;
+		visibleRect.IntersectRect(&visibleRect, &overlayClient);
+		if (visibleRect.right <= visibleRect.left + 20 || visibleRect.bottom <= visibleRect.top + 8)
+		{
+			grid->ShowWindow(SW_HIDE);
+			continue;
+		}
+
+		grid->SetRedraw(FALSE);
+		grid->MoveWindow(finalRect);
+		grid->ShowWindow(SW_SHOW);
+		grid->SetFont(&m_tableListViewFont);
+
+		grid->SetRowCount((std::max)(1, rowCount + 1));
+		grid->SetColumnCount((std::max)(1, colCount));
+		grid->SetFixedRowCount(0);
+		grid->SetFixedColumnCount(0);
+		for (BOOL fixedRow = FALSE; fixedRow <= TRUE; ++fixedRow)
+		{
+			for (BOOL fixedCol = FALSE; fixedCol <= TRUE; ++fixedCol)
+			{
+				if (CGridCellBase* defaultCell = grid->GetDefaultCell(fixedRow, fixedCol))
+					defaultCell->SetFormat(normalizeWrapFormat(defaultCell->GetFormat()));
+			}
+		}
+		for (int ci = 0; ci < colCount; ++ci)
+		{
+			const int widthPx = finalColWidths.empty() ? model.colWidths[(size_t)ci] : finalColWidths[(size_t)ci];
+			grid->SetColumnWidth(ci, widthPx);
+			grid->SetItemText(0, ci, model.headers[(size_t)ci]);
+			grid->SetItemFormat(0, ci, normalizeWrapFormat(cellFmt));
+			grid->SetItemBkColour(0, ci, headerBack);
+			grid->SetItemFgColour(0, ci, m_themeForeground);
+		}
+
+		grid->SetRowHeight(0, headerHeightPx);
+
+		for (int ri = 0; ri < rowCount; ++ri)
+		{
+			const auto& row = model.rows[(size_t)ri];
+			const COLORREF rowBack = (ri < (int)model.rowBackColors.size() && model.rowBackColors[(size_t)ri] != CLR_INVALID)
+				? model.rowBackColors[(size_t)ri]
+				: m_themeBackground;
+			for (int ci = 0; ci < colCount; ++ci)
+			{
+				CString text;
+				if (ci < (int)row.size())
+					text = row[(size_t)ci];
+				grid->SetItemText(ri + 1, ci, text);
+				grid->SetItemFormat(ri + 1, ci, normalizeWrapFormat(cellFmt));
+				grid->SetItemBkColour(ri + 1, ci, rowBack);
+				grid->SetItemFgColour(ri + 1, ci, m_themeForeground);
+			}
+			const int rowHeight = (ri < static_cast<int>(finalRowHeights.size()))
+				? finalRowHeights[static_cast<size_t>(ri)]
+				: (std::max)(22, baseLineHeightPx + 6);
+			grid->SetRowHeight(ri + 1, rowHeight);
+		}
+
+		grid->SetRedraw(TRUE);
+		grid->ShowScrollBar(SB_HORZ, FALSE);
+		grid->Invalidate(FALSE);
+	}
+
+	if (shouldUpdateTableSpaceAfter)
+	{
+		std::sort(pendingTableSpaceAfter.begin(), pendingTableSpaceAfter.end(),
+			[](const std::pair<long, LONG>& a, const std::pair<long, LONG>& b) {
+				if (a.first != b.first) return a.first < b.first;
+				return a.second < b.second;
+			});
+		std::vector<std::pair<long, LONG>> mergedSpaceAfter;
+		mergedSpaceAfter.reserve(pendingTableSpaceAfter.size());
+		for (const auto& item : pendingTableSpaceAfter)
+		{
+			if (mergedSpaceAfter.empty() || mergedSpaceAfter.back().first != item.first)
+			{
+				mergedSpaceAfter.push_back(item);
+			}
+			else if (item.second > mergedSpaceAfter.back().second)
+			{
+				mergedSpaceAfter.back().second = item.second;
+			}
+		}
+		pendingTableSpaceAfter.swap(mergedSpaceAfter);
+
+		if (!pendingTableSpaceAfter.empty())
+		{
+			const bool oldSuppressChange = m_suppressChangeEvent;
+			m_suppressChangeEvent = true;
+			LONG selStart = 0;
+			LONG selEnd = 0;
+			m_editContent.GetSel(selStart, selEnd);
+			const int firstVisible = m_editContent.GetFirstVisibleLine();
+			for (const auto& item : pendingTableSpaceAfter)
+			{
+				PARAFORMAT2 para{};
+				para.cbSize = sizeof(para);
+				para.dwMask = PFM_SPACEAFTER;
+				para.dySpaceAfter = item.second;
+				m_editContent.SetSel(item.first, item.first);
+				m_editContent.SetParaFormat(para);
+				m_tableSpaceAfterStarts.push_back(item.first);
+			}
+			m_editContent.SetSel(selStart, selEnd);
+			const int delta = firstVisible - m_editContent.GetFirstVisibleLine();
+			if (delta != 0)
+				m_editContent.LineScroll(delta);
+			m_suppressChangeEvent = oldSuppressChange;
+		}
+
+		// Applying paragraph spacing changes Y positions of downstream rows.
+		// Re-anchor each table grid immediately to avoid one-frame/persistent drift.
+		for (size_t oi = 0; oi < m_tableListViewOverlays.size() && oi < models.size(); ++oi)
+		{
+			auto& overlay = m_tableListViewOverlays[oi];
+			if (!overlay.gridCtrl || !::IsWindow(overlay.gridCtrl->GetSafeHwnd()))
+				continue;
+			const auto& model = models[oi];
+			if (model.richRowStarts.empty())
+				continue;
+
+			CPoint topLeft;
+			if (!tryGetRowTopLeft(model.richRowStarts.front(), model.richRowStarts.front(), topLeft))
+				continue;
+
+			CRect oldRect;
+			overlay.gridCtrl->GetWindowRect(&oldRect);
+			m_mermaidOverlay.ScreenToClient(&oldRect);
+			const int targetHeight = (std::max)(24, oldRect.Height());
+
+			CRect targetRect(model.rect.left, topLeft.y, model.rect.right, topLeft.y + targetHeight);
+			CRect visibleRect = targetRect;
+			visibleRect.IntersectRect(&visibleRect, &overlayClient);
+			if (visibleRect.right <= visibleRect.left + 20 || visibleRect.bottom <= visibleRect.top + 8)
+			{
+				overlay.gridCtrl->ShowWindow(SW_HIDE);
+				continue;
+			}
+
+			if (targetRect != oldRect)
+				overlay.gridCtrl->MoveWindow(targetRect);
+			overlay.gridCtrl->ShowWindow(SW_SHOW);
+		}
+
+		m_tableSpaceAfterWidthPx = spacingWidthPx;
+		m_tableSpaceAfterZoom = zoom;
+		m_tableSpaceAfterRowStamp = spacingRowStamp;
+	}
 }
 
 void CMarkdownEditorDlg::DrawTocOverlay(CDC& dc)
@@ -3617,4 +4653,5 @@ void CMarkdownEditorDlg::UpdateTocSpacing()
 		dc.SelectObject(oldFont);
 	restoreEditorView();
 }
+
 
