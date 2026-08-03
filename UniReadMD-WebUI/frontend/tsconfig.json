@@ -17,6 +17,7 @@
     "src/**/*.d.ts",
     "src/**/*.vue",
     "vite.config.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "vitest.baseline.config.ts"
   ]
 }

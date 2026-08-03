@@ -151,4 +151,90 @@ describe('preview table utils', () => {
       '2',
     ]);
   });
+
+  it('parseMarkdownTable 应拒绝不完整输入并规范无边框表格', () => {
+    expect(parseMarkdownTable('only one line')).toBeNull();
+    expect(parseMarkdownTable('A\n---')).toBeNull();
+    expect(parseMarkdownTable('A | B\n--- | ---\n1 | 2')).toEqual({
+      header: ['A', 'B'],
+      rows: [['1', '2']],
+    });
+  });
+
+  it('serializeMarkdownTable 应补齐短行并截断长行', () => {
+    expect(serializeMarkdownTable({
+      header: ['A', 'B'],
+      rows: [
+        ['1'],
+        ['2', '3', '4'],
+      ],
+    })).toBe([
+      '| A | B |',
+      '| --- | --- |',
+      '| 1 |  |',
+      '| 2 | 3 |',
+    ].join('\n'));
+  });
+
+  it('行操作应覆盖插入、删除、上下移动及边界', () => {
+    const table = {
+      header: ['A'],
+      rows: [['1'], ['2']],
+    };
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 0,
+    }, 'insert-row-above').changed).toBe(true);
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 0,
+      colIndex: 0,
+    }, 'delete-row')).toMatchObject({ changed: false });
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 2,
+      colIndex: 0,
+    }, 'delete-row').changed).toBe(true);
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 0,
+    }, 'move-row-up')).toMatchObject({ changed: false });
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 0,
+    }, 'move-row-down').changed).toBe(true);
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 3,
+      colIndex: 0,
+    }, 'move-row-down')).toMatchObject({ changed: false });
+  });
+
+  it('列操作应覆盖插入、删除、左右移动及边界', () => {
+    const table = {
+      header: ['A', 'B'],
+      rows: [['1', '2']],
+    };
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 0,
+    }, 'insert-col-left').changed).toBe(true);
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 1,
+    }, 'insert-col-right').changed).toBe(true);
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 99,
+    }, 'delete-col').changed).toBe(true);
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 0,
+    }, 'move-col-left')).toMatchObject({ changed: false });
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: table.header.length - 1,
+    }, 'move-col-right')).toMatchObject({ changed: false });
+    expect(applyPreviewTableActionToModel(table, {
+      rowIndex: 1,
+      colIndex: 0,
+    }, 'move-col-right').changed).toBe(true);
+  });
 });

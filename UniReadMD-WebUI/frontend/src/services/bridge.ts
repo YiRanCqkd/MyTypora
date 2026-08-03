@@ -133,7 +133,11 @@ function ensureExportDocumentResult(
 
   return {
     filePath: ensureStringField(value.filePath, 'filePath', context),
-    format: ensureExportFormatField(value.format, 'format', context) as ExportDocumentResult['format'],
+    format: ensureExportFormatField(
+      value.format,
+      'format',
+      context,
+    ) as ExportDocumentResult['format'],
     engine,
   };
 }
@@ -155,10 +159,14 @@ function ensureExportCapabilitiesResult(
   };
 
   return {
-    builtinFormats: normalizeFormatList(value.builtinFormats) as ExportCapabilitiesResult['builtinFormats'],
+    builtinFormats: normalizeFormatList(
+      value.builtinFormats,
+    ) as ExportCapabilitiesResult['builtinFormats'],
     pandocAvailable: Boolean(value.pandocAvailable),
     pandocVersion: typeof value.pandocVersion === 'string' ? value.pandocVersion : '',
-    pandocFormats: normalizeFormatList(value.pandocFormats) as ExportCapabilitiesResult['pandocFormats'],
+    pandocFormats: normalizeFormatList(
+      value.pandocFormats,
+    ) as ExportCapabilitiesResult['pandocFormats'],
   };
 }
 

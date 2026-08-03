@@ -1,0 +1,49 @@
+name: Frontend Quality
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: windows-latest
+    env:
+      FRONTEND_BUNDLE_BUDGET_KB: '1400'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.8.0'
+          cache: 'npm'
+          cache-dependency-path: |
+            UniReadMD-WebUI/package-lock.json
+            UniReadMD-WebUI/frontend/package-lock.json
+
+      - name: Install root deps
+        run: npm --prefix UniReadMD-WebUI ci
+
+      - name: Install frontend deps
+        run: npm --prefix UniReadMD-WebUI/frontend ci
+
+      - name: Run frontend quality gate
+        run: npm --prefix UniReadMD-WebUI run quality
+
+      - name: Install Playwright browser
+        run: npm --prefix UniReadMD-WebUI/frontend exec playwright install chromium
+
+      - name: Run frontend E2E baseline
+        shell: pwsh
+        run: |
+          $report = Join-Path $env:RUNNER_TEMP 'unireadmd-playwright.json'
+          $env:PLAYWRIGHT_JSON_OUTPUT_NAME = $report
+          npm --prefix UniReadMD-WebUI/frontend run e2e -- --reporter=json
+          $playwrightExit = $LASTEXITCODE
+          if ($playwrightExit -notin @(0, 1)) {
+            exit $playwrightExit
+          }
+          npm --prefix UniReadMD-WebUI/frontend run check:e2e-baseline

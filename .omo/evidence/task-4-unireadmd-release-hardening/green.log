@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "quality": {
+    "exitCode": 0,
+    "elapsedSeconds": 169.2,
+    "typecheck": 0,
+    "lintErrors": 0,
+    "lintWarnings": 0,
+    "unitTestsPassed": 68,
+    "electronTestsPassed": 1,
+    "qualityScriptTestsPassed": 13,
+    "buildExitCode": 0
+  },
+  "helper": {
+    "protocol": "-LiteralArguments @(...)",
+    "nodeVersion": "v24.8.0",
+    "exitCodeProbe": 23,
+    "invalidToolExitCode": 64,
+    "malformedProtocolExitCode": 64,
+    "npmSeparatorReachedChild": true,
+    "system32AvailableForTaskkill": true
+  },
+  "coreCoverage": {
+    "statements": 95.28,
+    "branches": 90.23,
+    "functions": 100,
+    "lines": 95.28
+  },
+  "fullBaseline": {
+    "exitCode": 0,
+    "statements": 25.26,
+    "lines": 25.26,
+    "includesAppVue": true,
+    "appVueStatements": 0
+  },
+  "e2eBaseline": {
+    "playwrightExitCode": 1,
+    "comparatorExitCode": 0,
+    "elapsedSeconds": 130.7,
+    "passed": 20,
+    "failed": 12,
+    "knownFailures": 12,
+    "flaky": 0,
+    "skipped": 0,
+    "port4173ListenersAfterExit": 0,
+    "residualProcessesAfterExit": 0,
+    "reportSha256": "9019c903a134e175ee2d69660121108a0a9f193a1c3fdca86b8a0627ba71f3e3"
+  },
+  "sourceSizeInfrastructure": {
+    "workflowLines": 41,
+    "playwrightConfigLines": 27,
+    "helperLines": 56,
+    "qualityScriptTestLines": 203,
+    "releaseEntrypointTestLines": 138,
+    "limit": 250
+  },
+  "productionBuild": {
+    "exitCode": 0,
+    "modulesTransformed": 1998,
+    "outDir": "D:\\DevTools\\unireadmd-task4-fixer2-production-build"
+  },
+  "openSpec": {
+    "changeStrictExitCode": 0,
+    "specStrictExitCode": 0,
+    "specsPassed": 5
+  }
+}

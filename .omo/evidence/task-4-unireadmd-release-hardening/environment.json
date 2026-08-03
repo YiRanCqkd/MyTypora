@@ -1,0 +1,39 @@
+{
+  "capturedAt": "2026-08-03T20:37:23.4752001+08:00",
+  "node": {
+    "path": "D:\\Program Files\\nodejs\\node.exe",
+    "version": "v24.8.0"
+  },
+  "npm": {
+    "path": "D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    "version": "11.6.0",
+    "cache": "D:\\DevTools\\npm-cache"
+  },
+  "git": {
+    "path": "D:\\Program Files\\Git\\cmd\\git.exe",
+    "version": "git version 2.47.1.windows.2"
+  },
+  "openSpec": {
+    "path": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js",
+    "version": "0.12.0"
+  },
+  "helperEnvironment": {
+    "fixedNodeFirst": true,
+    "system32Present": true,
+    "pathNodeCandidates": 1,
+    "systemRoot": "C:\\WINDOWS"
+  },
+  "playwrightLifecycle": {
+    "redState": "Terminating the WebServer 后等待，taskkill 不可解析",
+    "greenState": "Terminated the WebServer 后自然退出",
+    "reportSource": "D:\\DevTools\\unireadmd-task4-fixer2-full-e2e\\report.json",
+    "reportSha256": "9019c903a134e175ee2d69660121108a0a9f193a1c3fdca86b8a0627ba71f3e3",
+    "deletedAfterEvidence": true
+  },
+  "gitEvidenceSource": {
+    "kind": "index blob",
+    "rawBytes": true,
+    "worktreePackageIdentityExcluded": true
+  },
+  "secretsCaptured": false
+}

@@ -69,4 +69,29 @@ describe('markdown-shortcuts utils', () => {
       changed: true,
     });
   });
+
+  it('空链接和空块应返回稳定占位或不变结果', () => {
+    expect(buildInlineShortcutPatch('', 'link')).toEqual({
+      insert: '[link](https://)',
+      selectionStart: 1,
+      selectionEnd: 5,
+      changed: true,
+    });
+    expect(indentMarkdownBlockLines('')).toEqual({
+      text: '',
+      changed: false,
+    });
+  });
+
+  it('反缩进应支持 tab、单空格和无缩进行', () => {
+    expect(indentMarkdownBlockLines('\titem\n item\nplain', {
+      outdent: true,
+    })).toEqual({
+      text: 'item\nitem\nplain',
+      changed: true,
+    });
+    expect(indentMarkdownBlockLines('item', {
+      indentUnit: '\t',
+    }).text).toBe('\titem');
+  });
 });

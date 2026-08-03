@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "scenarios": [
+    {
+      "name": "未使用变量触发 Lint",
+      "expectedExitCode": 1,
+      "actualExitCode": 1,
+      "result": "1 error / 0 warnings",
+      "error": "@typescript-eslint/no-unused-vars"
+    },
+    {
+      "name": "覆盖率阈值人为提高至 101",
+      "expectedExitCode": 1,
+      "actualExitCode": 1,
+      "error": "Coverage for lines does not meet global threshold"
+    },
+    {
+      "name": "新增 Playwright failure id",
+      "expectedExitCode": 1,
+      "actualExitCode": 1,
+      "error": "ERR_E2E_NEW_FAILURE"
+    },
+    {
+      "name": "source-size limit 人为降低至 1",
+      "expectedExitCode": 1,
+      "actualExitCode": 1,
+      "error": "ERR_SOURCE_SIZE"
+    },
+    {
+      "name": "helper 混用兼容参数与显式协议",
+      "expectedExitCode": 64,
+      "actualExitCode": 64,
+      "error": "ERR_INVOKE_NODE_TOOL_ARGUMENTS"
+    },
+    {
+      "name": "非法 helper tool",
+      "expectedExitCode": 64,
+      "actualExitCode": 64,
+      "error": "ERR_INVOKE_NODE_TOOL"
+    }
+  ]
+}

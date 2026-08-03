@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "scenarios": [
+    {
+      "name": "本地分层质量门禁",
+      "command": "invoke-node-tool.ps1 npm -LiteralArguments @(... 'run', 'quality')",
+      "exitCode": 0,
+      "elapsedSeconds": 169.2
+    },
+    {
+      "name": "PowerShell 显式参数协议",
+      "result": "子命令收到 --reporter=json，Node 版本为 v24.8.0",
+      "exitCode": 0
+    },
+    {
+      "name": "标准自管 Playwright webServer",
+      "result": "130.7 秒自然退出，20 passed / 12 failed / 0 flaky / 0 skipped",
+      "playwrightExitCode": 1,
+      "comparatorExitCode": 0,
+      "port4173Listeners": 0,
+      "residualProcesses": 0
+    },
+    {
+      "name": "CI 精确 Node 基线",
+      "expected": "24.8.0",
+      "actual": "24.8.0",
+      "exitCode": 0
+    },
+    {
+      "name": "Git index blob 证据绑定",
+      "result": "全部 taskFileHashes 匹配固定 Git index blob 原始字节",
+      "exitCode": 0
+    }
+  ]
+}

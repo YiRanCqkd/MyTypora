@@ -11,14 +11,19 @@
     "e2e:ui": "playwright test --ui",
     "e2e:visual": "playwright test --grep \"visual baseline\"",
     "e2e:visual:update": "playwright test --grep \"visual baseline\" --update-snapshots",
+    "check:e2e-baseline": "node ../scripts/check-e2e-baseline.mjs --baseline e2e/known-failures.json",
     "perf:run": "node scripts/perf_baseline.mjs",
     "perf:update-baseline": "node scripts/perf_baseline.mjs --update-baseline",
     "perf:check": "node scripts/check_perf_regression.mjs",
     "check:bundle": "node scripts/check_bundle_budget.mjs",
     "lint": "eslint --ext .ts,.vue src",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:baseline": "vitest run --coverage --config vitest.baseline.config.ts",
     "test:watch": "vitest",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "quality:fast": "npm run typecheck && npm run lint && npm run test",
+    "quality:coverage": "npm run test:coverage && npm run test:coverage:baseline"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
@@ -42,12 +47,15 @@
     "vue": "^3.5.18"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
     "@playwright/test": "^1.55.0",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.3.0",
     "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
     "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/coverage-v8": "3.2.4",
+    "@vue/compiler-sfc": "3.5.29",
     "@vue/test-utils": "^2.4.6",
     "eslint": "^8.57.1",
     "eslint-plugin-vue": "^9.28.0",

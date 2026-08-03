@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "task": "4. 修复 CI、Lint 基线和覆盖率基础设施",
+  "generatedAt": "2026-08-03T20:37:23.4752001+08:00",
+  "headBefore": "fdad0e59748bd0c3ec3c337dc1a2e8f96d824889",
+  "redCommand": {
+    "notReplayable": true,
+    "exitCode": 1,
+    "assertions": [
+      "Lint 基线为 19 个错误和 6 个警告",
+      "coverage 因缺少 @vitest/coverage-v8 返回 1",
+      "test:electron 因缺少脚本返回 1",
+      "PowerShell 真实脚本调用面不能可靠传递未加引号的独立 --",
+      "标准 Playwright webServer 单用例超过 200 秒硬超时并遗留进程树",
+      "manifest 的三个 package/lock 哈希错误绑定用户工作区字节",
+      "CI setup-node 使用浮动版本 24 而不是精确版本 24.8.0"
+    ]
+  },
+  "greenVerificationCommands": [
+    {
+      "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 npm -LiteralArguments @('--cache', 'D:\\DevTools\\npm-cache', '--prefix', 'UniReadMD-WebUI', 'run', 'quality')",
+      "expectedExitCode": 0
+    },
+    {
+      "command": "$env:PLAYWRIGHT_JSON_OUTPUT_NAME = 'D:\\DevTools\\unireadmd-task4-e2e.json'; & .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 npm -LiteralArguments @('--cache', 'D:\\DevTools\\npm-cache', '--prefix', 'UniReadMD-WebUI/frontend', 'run', 'e2e', '--', '--reporter=json', '--output', 'D:\\DevTools\\unireadmd-task4-e2e-results')",
+      "expectedExitCode": 1,
+      "acceptedReason": "仅包含 12 项 known failure，随后 comparator 必须返回 0"
+    },
+    {
+      "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 node -LiteralArguments @('UniReadMD-WebUI/scripts/check-e2e-baseline.mjs', '--report', 'D:\\DevTools\\unireadmd-task4-e2e.json', '--baseline', 'UniReadMD-WebUI/frontend/e2e/known-failures.json')",
+      "expectedExitCode": 0
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' 'D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js' validate harden-and-complete-unireadmd --strict",
+      "expectedExitCode": 0
+    }
+  ],
+  "historicalOneShotVerificationCommands": [
+    {
+      "name": "powershell-argument-boundary",
+      "exitCode": 1
+    },
+    {
+      "name": "playwright-webserver-timeout-process-tree",
+      "exitCode": 124
+    },
+    {
+      "name": "lint-unused-variable",
+      "exitCode": 1
+    },
+    {
+      "name": "coverage-threshold-101",
+      "exitCode": 1
+    },
+    {
+      "name": "e2e-new-failure-id",
+      "exitCode": 1
+    },
+    {
+      "name": "source-size-limit-1",
+      "exitCode": 1
+    },
+    {
+      "name": "helper-malformed-protocol",
+      "exitCode": 64
+    }
+  ],
+  "taskFileHashPolicy": {
+    "source": "Git index blob 原始字节",
+    "algorithm": "SHA-256",
+    "commandSurface": "固定 Git 的 git show :path，由固定 Node 以 Buffer 读取 stdout",
+    "excludesEvidenceFiles": true,
+    "includesFinalCommitHash": false
+  },
+  "taskFileHashes": {
+    ".github/workflows/frontend-quality.yml": "c1ad220713336576ed86db9c922c7a8df3365a08c6bb72718e5c9906f60b78f7",
+    "UniReadMD-WebUI/package.json": "602b3ef3c7823fad9fb0efe871a1712e640db222be90d6128d30ed0bd4739bbe",
+    "UniReadMD-WebUI/frontend/package.json": "f9c18af041b315523c6be7871336a4d9390dbb303237d49123b81264f38148a7",
+    "UniReadMD-WebUI/frontend/package-lock.json": "fd154127549d7ef6969f160de00f730cb62cc7387ffdb465e256fd416a802254",
+    "UniReadMD-WebUI/frontend/vitest.config.ts": "14904cc8a090d2a07b97c11cc8344a45c5f3f93d22df7b0bec1f6857ef5364e9",
+    "UniReadMD-WebUI/frontend/vitest.baseline.config.ts": "9af1386cd6a0afbe6bab88ff460c79acbf5be6a484d022c7bcc555604b1efac6",
+    "UniReadMD-WebUI/frontend/tsconfig.json": "f16e52f1f12a0df0ef955089183ffde312b3cf139519a59babf73b014265ca50",
+    "UniReadMD-WebUI/frontend/src/App.vue": "8d119b403428746885fc6cb9ac7450e2847b5c2af3349aff44dba5f080f6e951",
+    "UniReadMD-WebUI/frontend/src/services/bridge.ts": "9f8bb5c9d71047170457a976651928d812e5333dbe33f0c9e3ab476f60ef6eff",
+    "UniReadMD-WebUI/frontend/src/services/bridge.spec.ts": "a1e99eec1ec1e58b8acbb91e74f06c9713d7fcafa4c535b38d2335b0e189eb52",
+    "UniReadMD-WebUI/frontend/src/services/native-bridge-fallback.spec.ts": "9ab26811dbb118f37fa6635468ce5ab7944c3f3f035325d2d81087a44227904d",
+    "UniReadMD-WebUI/frontend/src/utils/markdown.spec.ts": "a9082568dcc7b1c65c82de7d96b0a1a94e7a6811006aadfa84632a60e3eba947",
+    "UniReadMD-WebUI/frontend/src/utils/markdown-shortcuts.spec.ts": "129c6c2d30f77ffd7e499d457d9c84752fd9ba88c60ee6ffaa8729658347f47b",
+    "UniReadMD-WebUI/frontend/src/utils/preview-table.spec.ts": "25dcc8225f431a196ea0e87b467cd72d356ef444bd7474ab103b418b93fdfcfe",
+    "UniReadMD-WebUI/frontend/src/utils/trace.spec.ts": "83b265983fddc9efd7d6dd798fb705f296aa28739cd7a8e5b8034314f0d0d2bb",
+    "UniReadMD-WebUI/frontend/src/vendor/markdown-it-mathjax3.ts": "bc90e8c26a4ebfa4247a611ea86bf77968b11d739b8ddd94b73ce1963ec9b7fd",
+    "UniReadMD-WebUI/frontend/e2e/known-failures.json": "41ae871274bcd530d1086e5a1a938905288d2d84535252ccb5dce51b35ac0f5a",
+    "UniReadMD-WebUI/frontend/playwright.config.ts": "372e57d609fa9d115ba8d974bf9259dfe866ce8ddef7a51368ac28289a288aba",
+    "UniReadMD-WebUI/electron/test/baseline.test.cjs": "79f91cf17b89cea3091043e15acb105edb823f4cd76348b5744bdf4f140ecde5",
+    "UniReadMD-WebUI/scripts/invoke-node-tool.ps1": "bad79ca7b98e71198cacda39e433dc42e1cfe0d8e311ad711e40d8d6f127135d",
+    "UniReadMD-WebUI/scripts/check-source-size.mjs": "4d73f81d5dfbed2283d980900c870a90bd1c1b5879ddd8169910c226f08544af",
+    "UniReadMD-WebUI/scripts/check-design-tokens.mjs": "21c91f0962232089bf05a3c0350c205f76456e8c688249bd564c73a239d019af",
+    "UniReadMD-WebUI/scripts/check-e2e-baseline.mjs": "af48c5c99b721e8fce07e17c22adae8a0c336068923e893b7a81a8b6c5e02347",
+    "UniReadMD-WebUI/scripts/test/quality-scripts.test.mjs": "2d2a2ff1e702d076f48f2c1110eb1c990fc3a91e3c0ffc64db9d64e35644ef11",
+    "UniReadMD-WebUI/scripts/test/release-entrypoints.test.mjs": "44bd1bef355026d7bae2db78667569e75b62527cd1b6edee2a08c14f6506f22b",
+    "openspec/changes/harden-and-complete-unireadmd/tasks.md": "d073baa3be1f9e90e59fe528bad0d3c7cdf430ec7f9490efd85527f1cda375f9"
+  }
+}

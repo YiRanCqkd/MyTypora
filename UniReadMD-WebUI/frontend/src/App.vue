@@ -182,15 +182,6 @@ const SOURCE_MAPPED_BLOCK_TOKENS = [
   'code_block',
 ];
 
-const PREVIEW_INLINE_EDITABLE_TOKENS = new Set([
-  'paragraph_open',
-  'heading_open',
-  'blockquote_open',
-  'list_item_open',
-  'fence',
-  'code_block',
-]);
-
 const PREVIEW_TOKEN_LABELS: Record<string, string> = {
   paragraph_open: '段落',
   heading_open: '标题',
@@ -345,7 +336,8 @@ markdown.renderer.rules.fence = (tokens, idx, options, env, self) => {
   const sourceEnd = token.attrGet?.('data-source-end') || '';
   const sourceToken = token.attrGet?.('data-source-token') || 'fence';
   const sourceAttrs = sourceStart && sourceEnd
-    ? ` data-source-start='${sourceStart}' data-source-end='${sourceEnd}' data-source-token='${sourceToken}'`
+    ? ` data-source-start='${sourceStart}' data-source-end='${sourceEnd}'`
+      + ` data-source-token='${sourceToken}'`
     : '';
 
   const info = (token.info || '').trim().split(/\s+/)[0] || '';
@@ -1112,15 +1104,6 @@ function applyTheme(mode: Theme) {
   document.documentElement.dataset.theme = mode;
 }
 
-function toFileHref(filePath: string) {
-  const normalized = filePath.replace(/\\/g, '/');
-  if (/^[A-Za-z]:\//.test(normalized)) {
-    return `file:///${encodeURI(normalized)}`;
-  }
-
-  return `file://${encodeURI(normalized)}`;
-}
-
 function getUserCssLinkElement() {
   const linkId = 'unireadmd-user-css';
   let link = document.getElementById(linkId) as HTMLLinkElement | null;
@@ -1861,15 +1844,6 @@ function getEditorRangeByLines(startLine: number, endLine: number) {
   };
 }
 
-function getEditorFragmentByLines(startLine: number, endLine: number) {
-  const range = getEditorRangeByLines(startLine, endLine);
-  if (!range || !editorView) {
-    return '';
-  }
-
-  return editorView.state.doc.sliceString(range.from, range.to);
-}
-
 function normalizePreviewInlineEditContent(content: string) {
   return content.replace(/\r\n/g, '\n');
 }
@@ -1928,7 +1902,9 @@ function findPreviewInlineEditAnchorNode() {
   }
 
   const mappedNodes = Array.from(
-    preview.querySelectorAll<HTMLElement>('[data-source-start][data-source-end][data-source-token]'),
+    preview.querySelectorAll<HTMLElement>(
+      '[data-source-start][data-source-end][data-source-token]',
+    ),
   );
   return mappedNodes.find((node) => {
     const start = Number(node.dataset.sourceStart || 0);
@@ -2078,19 +2054,6 @@ function cancelPreviewInlineEdit() {
   });
 }
 
-function focusPreviewInlineEditor() {
-  void nextTick(() => {
-    const textarea = previewInlineEditTextarea.value;
-    if (!textarea) {
-      return;
-    }
-
-    textarea.focus();
-    const valueLength = textarea.value.length;
-    textarea.setSelectionRange(valueLength, valueLength);
-  });
-}
-
 function findSourceMappedNode(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return null;
@@ -2133,7 +2096,10 @@ function resolvePreviewTaskItemContext(target: HTMLElement | null) {
     if (label) {
       const labelFor = label.getAttribute('for');
       const candidate = labelFor ? document.getElementById(labelFor) : null;
-      if (candidate instanceof HTMLInputElement && candidate.classList.contains('task-list-item-checkbox')) {
+      if (
+        candidate instanceof HTMLInputElement
+        && candidate.classList.contains('task-list-item-checkbox')
+      ) {
         checkbox = candidate;
       }
     }
@@ -2171,7 +2137,9 @@ function resolvePreviewTaskItemContext(target: HTMLElement | null) {
     return null;
   }
 
-  const taskCheckboxes = Array.from(mappedNode.querySelectorAll<HTMLInputElement>('.task-list-item-checkbox'));
+  const taskCheckboxes = Array.from(
+    mappedNode.querySelectorAll<HTMLInputElement>('.task-list-item-checkbox'),
+  );
   const resolvedTaskIndex = Math.max(0, taskCheckboxes.indexOf(checkbox));
   const allTaskCheckboxes = previewHost.value
     ? Array.from(previewHost.value.querySelectorAll<HTMLInputElement>('.task-list-item-checkbox'))
@@ -2214,10 +2182,13 @@ function togglePreviewTaskItem(context: PreviewTaskItemContext) {
     Math.min(context.globalTaskIndex, allMatchedLineNumbers.length - 1)
   ];
   const globalLine = doc.line(globalLineNo);
-  const globalNextLineText = globalLine.text.replace(taskPrefixPattern, (_match, start, current, end) => {
-    const marker = current === ' ' ? 'x' : ' ';
-    return `${start}${marker}${end}`;
-  });
+  const globalNextLineText = globalLine.text.replace(
+    taskPrefixPattern,
+    (_match, start, current, end) => {
+      const marker = current === ' ' ? 'x' : ' ';
+      return `${start}${marker}${end}`;
+    },
+  );
   if (globalNextLineText !== globalLine.text) {
     editorView.dispatch({
       changes: {
@@ -2275,75 +2246,11 @@ function togglePreviewTaskItem(context: PreviewTaskItemContext) {
 
 }
 
-function beginPreviewInlineEdit(
-  node: HTMLElement,
-  options?: {
-    silentUnsupported?: boolean;
-  },
-) {
-  if (previewInlineEditVisible.value) {
-    closePreviewInlineEditor();
-  }
-
-  const selection = parseInlineEditSelection(node);
-  if (!selection) {
-    return;
-  }
-
-  if (!PREVIEW_INLINE_EDITABLE_TOKENS.has(selection.token)) {
-    if (!options?.silentUnsupported) {
-      const label = PREVIEW_TOKEN_LABELS[selection.token] || selection.token;
-      errorMessage.value = `渲染态暂不支持直接编辑「${label}」，请切换 Source 编辑。`;
-    }
-    return;
-  }
-
-  const range = normalizeLineRange(selection.startLine, selection.endLine);
-  if (!range) {
-    return;
-  }
-
-  const editorRange = getEditorRangeByLines(range.startLine, range.endLine);
-  if (!editorRange) {
-    return;
-  }
-
-  const nextValue = getEditorFragmentByLines(range.startLine, range.endLine);
-  if (!nextValue && !editorView) {
-    return;
-  }
-
-  const nextStyle = buildPreviewInlineEditStyle(node);
-  if (!nextStyle) {
-    return;
-  }
-
-  const normalizedValue = normalizePreviewInlineEditContent(nextValue);
-
-  previewInlineEditSelection.value = {
-    startLine: range.startLine,
-    endLine: range.endLine,
-    token: selection.token,
-  };
-  previewInlineEditSession.value = {
-    from: editorRange.from,
-    to: editorRange.to,
-    startLine: range.startLine,
-    originalText: normalizedValue,
-    appliedText: normalizedValue,
-  };
-  previewInlineEditStyle.value = nextStyle;
-  previewInlineEditValue.value = normalizedValue;
-  previewInlineEditVisible.value = true;
-  errorMessage.value = '';
-  focusPreviewInlineEditor();
-}
-
 function commitPreviewInlineEdit() {
   closePreviewInlineEditor();
 }
 
-function handlePreviewDoubleClick(event: MouseEvent) {
+function handlePreviewDoubleClick() {
   if (sourceMode.value) {
     return;
   }
@@ -2880,7 +2787,8 @@ function findPreviewTableCellNode(selection: PreviewTableSelection) {
     return null;
   }
 
-  const tableSelector = `table[data-source-start='${selection.startLine}'][data-source-end='${selection.endLine}']`;
+  const tableSelector = `table[data-source-start='${selection.startLine}']`
+    + `[data-source-end='${selection.endLine}']`;
   const table = preview.querySelector<HTMLElement>(tableSelector);
   if (!table) {
     return null;
@@ -3334,7 +3242,12 @@ function handlePreviewTableCellEditKeydown(event: KeyboardEvent) {
     return;
   }
 
-  if (event.ctrlKey && event.shiftKey && event.altKey && (event.key === 'Delete' || event.key === 'Backspace')) {
+  if (
+    event.ctrlKey
+    && event.shiftKey
+    && event.altKey
+    && (event.key === 'Delete' || event.key === 'Backspace')
+  ) {
     event.preventDefault();
     void applyPreviewTableActionFromCellEditor('delete-col');
     return;
@@ -4089,7 +4002,10 @@ function handleGlobalWheel(event: WheelEvent) {
     return;
   }
 
-  if (!target?.closest('.preview-inline-editor') && !target?.closest('.preview-table-cell-editor')) {
+  if (
+    !target?.closest('.preview-inline-editor')
+    && !target?.closest('.preview-table-cell-editor')
+  ) {
     return;
   }
 
@@ -4129,7 +4045,11 @@ function handleGlobalKeydown(event: KeyboardEvent) {
     return;
   }
 
-  if (!sourceContextMenuVisible.value && event.key === 'Escape' && previewTableCellEditVisible.value) {
+  if (
+    !sourceContextMenuVisible.value
+    && event.key === 'Escape'
+    && previewTableCellEditVisible.value
+  ) {
     event.preventDefault();
     closePreviewTableCellEditor();
     return;
@@ -5098,15 +5018,15 @@ onBeforeUnmount(() => {
             <div class='document-loading-card'>加载中...</div>
           </section>
           <article
-            ref='previewHost'
             id='write'
+            ref='previewHost'
             class='preview'
             data-testid='preview-host'
-            v-html='renderedHtml'
             @click='handlePreviewClick'
             @dblclick='handlePreviewDoubleClick'
             @scroll='handlePreviewScroll'
             @contextmenu='handlePreviewContextMenu'
+            v-html='renderedHtml'
           ></article>
           <section
             v-if='previewInlineEditVisible'
@@ -5118,6 +5038,7 @@ onBeforeUnmount(() => {
               ref='previewInlineEditTextarea'
               v-model='previewInlineEditValue'
               class='preview-inline-editor-input'
+              :aria-label='previewInlineEditTitle'
               @input='handlePreviewInlineEditInput'
               @compositionstart='handlePreviewInlineEditCompositionStart'
               @compositionend='handlePreviewInlineEditCompositionEnd'
@@ -5188,8 +5109,8 @@ onBeforeUnmount(() => {
             @mousedown='startMainPreviewResize'
           ></div>
           <div
-            ref='editorHost'
             id='typora-source'
+            ref='editorHost'
             class='editor-host'
             data-testid='editor-host'
             @contextmenu='handleSourceContextMenu'

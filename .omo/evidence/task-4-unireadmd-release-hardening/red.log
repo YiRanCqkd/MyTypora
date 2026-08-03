@@ -1,0 +1,46 @@
+{
+  "status": "RED_CONFIRMED",
+  "originalTask4": {
+    "lint": {
+      "exitCode": 1,
+      "errors": 19,
+      "warnings": 6
+    },
+    "coverage": {
+      "exitCode": 1,
+      "reason": "缺少 @vitest/coverage-v8"
+    },
+    "electronTest": {
+      "exitCode": 1,
+      "reason": "缺少 test:electron 脚本"
+    }
+  },
+  "fixer2": {
+    "powershellArgumentBoundary": {
+      "surface": "Windows PowerShell -Command 调用 ps1",
+      "exitCode": 1,
+      "finding": "未加引号的独立 -- 在脚本参数绑定前丢失，旧 helper 没有显式数组协议"
+    },
+    "playwrightWebServer": {
+      "entry": "固定 Node 调用 npm 项目 e2e 脚本，标准自管 webServer",
+      "scope": "1 个已知通过用例",
+      "hardTimeoutSeconds": 200,
+      "exitCode": 124,
+      "port4173AfterTimeout": true,
+      "processTree": [
+        "Playwright node -> cmd -> npm node -> cmd -> Vite node -> esbuild",
+        "缩短为 Playwright node -> cmd -> Vite node -> esbuild 后仍停在 Terminating"
+      ],
+      "runtimeRootCause": "helper PATH 缺少 System32，Playwright 无法调用 taskkill.exe"
+    },
+    "evidenceBinding": {
+      "exitCode": 1,
+      "finding": "三个 package/lock manifest 哈希等于用户工作区字节而不等于 Git blob"
+    },
+    "ciNodeVersion": {
+      "expected": "24.8.0",
+      "actual": "24",
+      "exitCode": 1
+    }
+  }
+}

@@ -121,4 +121,73 @@ describe('markdown utils', () => {
     expect(output.some((item) => item.rule === 'diagram-mermaid')).toBe(true);
     expect(output.some((item) => item.rule === 'diagram-flow')).toBe(true);
   });
+
+  it('heading 与搜索工具应覆盖围栏、缩进、空查询和结果上限', () => {
+    const headings = extractHeadings([
+      '~~~md',
+      '# hidden',
+      '~~~',
+      '    # indented',
+      'Top',
+      '===',
+      '',
+      '---',
+      'plain',
+    ].join('\n'));
+
+    expect(headings).toEqual([{ level: 1, text: 'Top', line: 5 }]);
+    expect(findMatchedLines('A\na\na', '  ')).toEqual([]);
+    expect(findMatchedLines('A\na\na', 'a', 2)).toHaveLength(2);
+    expect(findActiveHeadingLine(headings, 0)).toBe(0);
+  });
+
+  it('validateMarkdownSyntax 应覆盖合法分支与其余稳定错误类型', () => {
+    const input = [
+      '#missing-space',
+      'escaped \\$ and paired $x$',
+      '- [x] valid task',
+      '[empty]()',
+      '[invalid](bad?.md)',
+      '[valid](https://example.com)',
+      '[^used]',
+      '[^used]: definition',
+      '',
+      '| A | B |',
+      '| --- | --- |',
+      '| one |',
+      '',
+      '```mermaid',
+      'flowchart TD',
+      '```',
+      '```sequence',
+      'Alice says hello',
+      '```',
+      '```sequence',
+      'A->>B: hello',
+      '```',
+      '```flow',
+      'start=>start: Start',
+      'start->end',
+      '```',
+      '```mermaid',
+      '```',
+      '$$',
+      'a + b',
+    ].join('\n');
+
+    const rules = validateMarkdownSyntax(input).map((item) => item.rule);
+
+    expect(rules).toContain('heading-space');
+    expect(rules).toContain('link-target');
+    expect(rules).toContain('table-row');
+    expect(rules).toContain('diagram-sequence');
+    expect(rules).toContain('diagram-mermaid');
+    expect(rules).toContain('block-math');
+    expect(rules).not.toContain('footnote-ref');
+    expect(rules).not.toContain('footnote-def');
+  });
+
+  it('validateMarkdownSyntax 在问题上限为零时不应追加诊断', () => {
+    expect(validateMarkdownSyntax('#missing-space', 0)).toEqual([]);
+  });
 });

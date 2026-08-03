@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "minimumPassed": 19,
+  "knownFailureIds": [
+    "[chromium] › visual.spec.ts:71:3 › visual baseline › 布局基线: pin-outline",
+    "[chromium] › visual.spec.ts:79:3 › visual baseline › 布局基线: 侧栏隐藏",
+    "[chromium] › visual.spec.ts:88:3 › visual baseline › 布局基线: 搜索替换面板",
+    "[chromium] › visual.spec.ts:101:3 › visual baseline › 布局基线: 渲染态块编辑浮层",
+    "[chromium] › visual.spec.ts:123:3 › visual baseline › 布局基线: 表格右键菜单",
+    "[chromium] › workbench.spec.ts:57:3 › UniReadMD workbench › 渲染态链接应默认进入编辑，Ctrl/Cmd+点击不拦截默认行为",
+    "[chromium] › workbench.spec.ts:531:3 › UniReadMD workbench › 渲染态内联编辑应支持 Ctrl+B/I/K 与缩进快捷键",
+    "[chromium] › workbench.spec.ts:578:3 › UniReadMD workbench › 渲染态应支持单击块编辑并回写源码",
+    "[chromium] › workbench.spec.ts:611:3 › UniReadMD workbench › 渲染态内联编辑应实时生效并支持 Esc 回滚",
+    "[chromium] › workbench.spec.ts:648:3 › UniReadMD workbench › 渲染态内联编辑提交后应可通过撤销回到编辑前内容",
+    "[chromium] › workbench.spec.ts:912:3 › UniReadMD workbench › 复杂语料渲染态编辑后应保持 Markdown 结构有效",
+    "[chromium] › workbench.spec.ts:1084:3 › UniReadMD workbench › Source/Focus/Typewriter 模式应支持切换与会话恢复"
+  ]
+}

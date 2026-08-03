@@ -1,5 +1,7 @@
 import katex from 'katex';
 import type MarkdownIt from 'markdown-it';
+import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs';
+import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs';
 
 const ESCAPE_RE = /[&<>"']/g;
 const ESCAPE_MAP: Record<string, string> = {
@@ -31,7 +33,7 @@ function renderMath(content: string, display: boolean): string {
   }
 }
 
-function isValidDelim(state: any, pos: number): {
+function isValidDelim(state: StateInline, pos: number): {
   can_open: boolean;
   can_close: boolean;
 } {
@@ -55,7 +57,7 @@ function isValidDelim(state: any, pos: number): {
   };
 }
 
-function mathInline(state: any, silent: boolean): boolean {
+function mathInline(state: StateInline, silent: boolean): boolean {
   if (state.src[state.pos] !== '$') {
     return false;
   }
@@ -117,7 +119,12 @@ function mathInline(state: any, silent: boolean): boolean {
   return true;
 }
 
-function mathBlock(state: any, start: number, end: number, silent: boolean): boolean {
+function mathBlock(
+  state: StateBlock,
+  start: number,
+  end: number,
+  silent: boolean,
+): boolean {
   let next = start;
   let lastPos = 0;
   let found = false;

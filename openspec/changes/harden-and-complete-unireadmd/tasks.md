@@ -3,7 +3,7 @@
 ## 1. Frontend Decomposition and Baseline Gates
 - [ ] 1.1 Task 2：用特征测试锁定前端现有渲染、编辑、会话、工作区、设置和导出行为。
 - [ ] 1.2 Task 2：从 `App.vue` 提取 markdown、editor、workspace、settings 和 export 模块。
-- [ ] 1.3 Task 4：修复 CI、Lint、coverage、source-size 和 E2E baseline 基础设施。
+- [x] 1.3 Task 4：修复 CI、Lint、coverage、source-size 和 E2E baseline 基础设施。
 
 ## 2. Electron Decomposition and Contracts
 - [ ] 2.1 Task 3：为设置、文件、授权、导出和菜单建立 Node `node:test` 合同测试。
