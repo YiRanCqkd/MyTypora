@@ -1,0 +1,50 @@
+{
+  "DoneClaim": {
+    "task": "Task 2 Playwright 原生 webServer 生命周期修复",
+    "changed_files": [
+      ".gitattributes",
+      "UniReadMD-WebUI/frontend/playwright.config.ts",
+      "UniReadMD-WebUI/frontend/scripts/check-playwright-lifecycle.mjs",
+      ".omo/evidence/task-2-playwright-lifecycle-fix/evidence.json",
+      ".omo/start-work/task-2-playwright-fixer-final.json"
+    ],
+    "tests": [
+      "PASS：原配置到 [6/6] 后 30 秒不退出，残留 Vite、esbuild 和 4173。",
+      "PASS：仅补 System32 的切换探针在 16.1 秒自然退出，6/6 且端口清理。",
+      "PASS：回归脚本 Red 超时退出 1；最小配置修复后 Green 退出 0。",
+      "PASS：原生配置两轮均完整 6/6，0 failed、skipped、flaky、retry。",
+      "PASS：两轮结束后 4173 监听和相关 Playwright/Vite/esbuild 进程均为 0。",
+      "PASS：typecheck、lint --max-warnings=0、69 项 Vitest 全部通过。",
+      "PASS：source-size、production build 和 OpenSpec strict validate 通过。",
+      "PASS：全量 E2E 原始退出 1，比较器确认 26 通过和 12 个已知失败。",
+      "PASS：全量 E2E 为 0 skipped、flaky、retry，无新增失败。"
+    ],
+    "manual_qa": [
+      "PASS：真实 Chromium 在仓库原生 webServer 下完成源码编辑到预览更新。",
+      "输入为 # 生命周期手工验证\\n\\n源码到预览已更新。",
+      "标题选择器 [data-testid=preview-host] h1 的二元观察结果为 true。",
+      "正文选择器 [data-testid=preview-host] 的二元观察结果为 true。",
+      "六张 Task 2 截图无新增中文、裁切、重叠、乱码或 tofu 回归。"
+    ],
+    "cleanup": [
+      "PASS：只按已记录 PID 闭包清理本线程创建的失败复现进程。",
+      "PASS：最终 4173 监听为 0，相关 Playwright/Vite/esbuild 进程为 0。",
+      "PASS：D 盘专属验证根已删除，截图、profile、日志和依赖无残留。",
+      "PASS：最终索引为空，HEAD 为本任务唯一原子提交。",
+      "PASS：全部用户既有脏路径的状态、大小和 SHA-256 与基线一致。"
+    ],
+    "risks": [
+      "hung_or_long_commands：用硬上限、close 事件、完整 JSON 和端口绑定共同判定。",
+      "misleading_success_output：[6/6] 仅作失败分界，不作成功证据。",
+      "stale_state：从候选提交归档并以固定 lock 执行全新 npm ci 复验。",
+      "dirty_worktree：仅显式暂存五个 allowlist 文件并逐路径复核用户哈希。",
+      "flaky_tests：同配置连续两轮要求 0 skipped、flaky、retry。",
+      "repeated_interruptions：超时或解析器失败轮次不作为成功，完整报告另行复核。",
+      "malformed_input：本任务不新增外部结构化输入协议，不适用。",
+      "prompt_injection：本任务不处理 LLM 提示或自然语言指令，不适用。",
+      "cancel_resume：本任务不引入可取消后台工作流，不适用。",
+      "全量 E2E 保留 12 个既有 known failure；未隐藏或强制成功。",
+      "375px 固定侧栏窄列为既有缺陷，本任务未扩围修改。"
+    ]
+  }
+}

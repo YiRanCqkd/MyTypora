@@ -1,2 +1,7 @@
+.gitattributes -text
 .omo/evidence/task-3-unireadmd-release-hardening/** -text
 .omo/evidence/task-2-unireadmd-release-hardening/** -text
+UniReadMD-WebUI/frontend/playwright.config.ts -text
+UniReadMD-WebUI/frontend/scripts/check-playwright-lifecycle.mjs -text
+.omo/evidence/task-2-playwright-lifecycle-fix/** -text
+.omo/start-work/task-2-playwright-fixer-final.json -text

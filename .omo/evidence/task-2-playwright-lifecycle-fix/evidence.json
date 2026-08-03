@@ -1,0 +1,132 @@
+{
+  "task": "Task 2 Playwright 原生 webServer 生命周期修复",
+  "baseline": {
+    "head": "45eabb4baf9966809fc949d08bdd5813df417ecd",
+    "indexTree": "0594baec2da709c0b4dd96fb7b481ec20ca0ad76",
+    "indexWasEmpty": true,
+    "listener4173BeforeRepro": 0,
+    "validationRootExistedBeforeTask": false
+  },
+  "rootCause": {
+    "mechanism": [
+      "Playwright 1.55 在 Windows 使用 shell 执行 taskkill /T /F。",
+      "当前隔离 PATH 不含 C:\\Windows\\System32，因而无法解析 taskkill.exe。",
+      "Playwright 忽略 taskkill 的失败输出后等待 webServer close，形成永久等待。",
+      "Vite Node、esbuild 和 4173 因进程树未被终止而持续存活。"
+    ],
+    "runtimeValues": {
+      "taskkillExists": true,
+      "taskkillResolvedBeforeFix": null,
+      "systemRoot": "C:\\WINDOWS",
+      "system32WasInPath": false
+    },
+    "baselineLineReporter": {
+      "exitCode": 124,
+      "elapsedSeconds": 45.1,
+      "reachedProgress": "[6/6]",
+      "postProgressLimitSeconds": 30,
+      "playwrightPid": 16228,
+      "vitePid": 37208,
+      "esbuildPid": 20884,
+      "listener4173Owner": 37208,
+      "listener4173AfterOwnedCleanup": 0
+    },
+    "baselineJsonReporter": {
+      "exitCode": 124,
+      "elapsedSeconds": 153.8,
+      "completeTerminalJson": false,
+      "residualPlaywrightViteEsbuild": true,
+      "listener4173": 1
+    },
+    "toggleProof": {
+      "change": "仅把 C:\\Windows\\System32 加入父 Playwright 的 PATH",
+      "exitCode": 0,
+      "elapsedSeconds": 16.1,
+      "expected": 6,
+      "unexpected": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "completeTerminalJson": true,
+      "listener4173": 0,
+      "screenshotCount": 6
+    }
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "claim": "Windows 收尾工具无法从 PATH 解析。",
+      "result": "确认",
+      "probe": "taskkill 存在但不可解析；只补 System32 即恢复自然退出。"
+    },
+    {
+      "id": "H2",
+      "claim": "Vite 或 esbuild 收到终止后仍持有句柄。",
+      "result": "反驳",
+      "probe": "补回 taskkill 后原 Vite/esbuild 组合自然清理，4173 为 0。"
+    },
+    {
+      "id": "H3",
+      "claim": "Chromium、reporter 或功能断言句柄阻止退出。",
+      "result": "反驳",
+      "probe": "挂起快照无 Chromium；同测试仅切换 PATH 后完整退出。"
+    },
+    {
+      "id": "H4",
+      "claim": "既有 4173 服务被错误复用。",
+      "result": "反驳",
+      "probe": "两次失败复现启动前监听均为 0，reuseExistingServer 为 false。"
+    }
+  ],
+  "redGreen": {
+    "red": {
+      "command": "node scripts/check-playwright-lifecycle.mjs",
+      "exitCode": 1,
+      "elapsedSeconds": 46.6,
+      "message": "Task 2 断言运行后 Playwright 未在 45000ms 内自然退出。"
+    },
+    "green": {
+      "command": "node scripts/check-playwright-lifecycle.mjs",
+      "exitCode": 0,
+      "elapsedSeconds": 15.0,
+      "expected": 6,
+      "unexpected": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "serverPortReleased": true
+    }
+  },
+  "preverification": {
+    "typecheckExitCode": 0,
+    "lintMaxWarningsExitCode": 0,
+    "vitestPassed": 69,
+    "vitestFailed": 0,
+    "sourceSizeExitCode": 0,
+    "largestFeatureLines": 202,
+    "buildExitCode": 0,
+    "buildModules": 2096,
+    "openspecStrictExitCode": 0,
+    "fullE2eRawExitCode": 1,
+    "fullE2ePassed": 26,
+    "fullE2eKnownFailed": 12,
+    "fullE2eSkipped": 0,
+    "fullE2eFlaky": 0,
+    "fullE2eRetry": 0,
+    "baselineComparatorExitCode": 0
+  },
+  "manualQa": {
+    "browser": "真实 Chromium",
+    "sourceToggleSelector": "#toggle-sourceview-btn",
+    "editorSelector": ".cm-content",
+    "input": "# 生命周期手工验证\\n\\n源码到预览已更新。",
+    "titleSelector": "[data-testid=preview-host] h1",
+    "titleObserved": true,
+    "bodySelector": "[data-testid=preview-host]",
+    "bodyObserved": true,
+    "screenshotSha256": "CE4C97AC1F67AE1389CCEB5E7D21C5E67FEE1F72588D6FC6178D8A3086508A"
+  },
+  "visualQa": [
+    "1280px 与 768px 六图中文清晰，无 tofu、乱码、新重叠或新裁切。",
+    "375px 固定 300px 侧栏导致标题裁切和正文窄列，是已记录既有缺陷。",
+    "本修复不修改 DOM、CSS、渲染或截图断言。"
+  ]
+}
