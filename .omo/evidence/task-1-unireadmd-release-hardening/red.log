@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "status": "EXPECTED_FAILURE",
+  "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js validate harden-and-complete-unireadmd --strict",
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "Change 'harden-and-complete-unireadmd' has issues\n✗ [ERROR] secure-markdown/spec.md: ADDED \"Trusted Markdown Sanitization\" must include at least one scenario\nNext steps:\n  - Ensure change has deltas in specs/: use headers ## ADDED/MODIFIED/REMOVED/RENAMED Requirements\n  - Each requirement MUST include at least one #### Scenario: block\n  - Debug parsed deltas: openspec change show <id> --json --deltas-only",
+  "fixture": "One Scenario header removed from secure-markdown delta in a D drive temp copy.",
+  "assertion": "strict validate must fail when a required Scenario is missing"
+}

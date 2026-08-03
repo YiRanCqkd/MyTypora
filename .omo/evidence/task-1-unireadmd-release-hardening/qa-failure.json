@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "scenario": "failure",
+  "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js validate harden-and-complete-unireadmd --strict",
+  "exitCode": 1,
+  "cliPath": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js",
+  "stderr": "Change 'harden-and-complete-unireadmd' has issues\n✗ [ERROR] secure-markdown/spec.md: ADDED \"Trusted Markdown Sanitization\" must include at least one scenario\nNext steps:\n  - Ensure change has deltas in specs/: use headers ## ADDED/MODIFIED/REMOVED/RENAMED Requirements\n  - Each requirement MUST include at least one #### Scenario: block\n  - Debug parsed deltas: openspec change show <id> --json --deltas-only",
+  "stdout": "",
+  "stableFailure": true,
+  "probes": {
+    "malformed_input": "Removed one Scenario header in a D drive temp copy; strict validate returned non-zero.",
+    "stale_state": "Original repository strict validate returned 0 after the temp red copy failed.",
+    "dirty_worktree": "Git worktree was inspected; unrelated dirty files are excluded by path staging.",
+    "hung_or_long_commands": "Every child command used a timeout and all completed without timeout.",
+    "misleading_success_output": "Green requires spec counts, delta count and Scenario counts, not just exit 0.",
+    "repeated_interruptions": "No interrupted command was reused as Green evidence.",
+    "not_applicable": [
+      "No network-dependent runtime after D drive OpenSpec install.",
+      "No token, auth, Cookie or full environment capture is used.",
+      "No browser or Electron UI flow is implemented in Task 1."
+    ]
+  }
+}

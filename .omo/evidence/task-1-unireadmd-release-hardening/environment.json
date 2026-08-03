@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-03T16:43:24.6354324+08:00",
+  "timezone": "Asia/Shanghai",
+  "node": {
+    "path": "D:\\Program Files\\nodejs\\node.exe",
+    "version": "v24.8.0",
+    "sha256": "3a9ac860c566b7aebf144be914f95e3ec36dc88040aa7acb5d9d1e6e0c7afd5e",
+    "packageId": "OpenJS.NodeJS",
+    "packageVersion": "24.8.0"
+  },
+  "npm": {
+    "cliPath": "D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    "version": "11.6.0",
+    "sha256": "3ce7cba6f5128dd5f54c98b6a5036b0f850496878cc2e21044b675fe3c594e3e",
+    "packageId": "OpenJS.NodeJS",
+    "packageVersion": "24.8.0"
+  },
+  "git": {
+    "path": "D:\\Program Files\\Git\\cmd\\git.exe",
+    "version": "git version 2.47.1.windows.2",
+    "sha256": "332883ea074abeabaa6b2ff4d744371da0fa00d259f7e49d3ab5c8fdfbe80920",
+    "packageId": "Git.Git",
+    "packageVersion": "2.47.1.2"
+  },
+  "oldNodeCandidate": {
+    "path": "D:\\DevEnv\\nodejs\\node.exe",
+    "version": "v16.19.1",
+    "selected": false
+  },
+  "openSpec": {
+    "package": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec",
+    "cliPath": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js",
+    "version": "0.12.0",
+    "cliSha256": "e3b9fa4fa46b747187aae7e5b08df70bc77e5208cf5c39fdce55fc2db9775c2f",
+    "prefix": "D:\\DevTools\\npm-global",
+    "cache": "D:\\DevTools\\npm-cache",
+    "dShims": [
+      {
+        "kind": "openspec",
+        "exists": true,
+        "sha256": "bdae39090f37410593d902fd8ff6deaaec389a54a665e8bc909f6fdf877c139a"
+      },
+      {
+        "kind": "openspec.cmd",
+        "exists": true,
+        "sha256": "9b419dbbf16a4e8c7840236ba96fe0d722f29903b913b79d4e8894854cab9eed"
+      },
+      {
+        "kind": "openspec.ps1",
+        "exists": true,
+        "sha256": "cf3c74a38526dee9343cc5430ee143cf67c99a426b86370e215289f9f71c22da"
+      }
+    ],
+    "legacyTargets": {
+      "checkedExplicitLegacyTargets": 4,
+      "allAbsent": true
+    }
+  },
+  "baseSha": {
+    "value": "143c33a64749565162c7b421df698556943c76ba",
+    "lower40": true,
+    "headAncestor": true
+  },
+  "wingetRepairFact": {
+    "openJsNodeJs2480RepairPreviouslyReturnedMsi1603": true,
+    "repeatedThisRun": false
+  },
+  "taskTextFileFormats": [
+    {
+      "path": "I:\\MyTypora\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "a5c09cb6eb8abd149200cedab6bfabaa56c8900ad5356da530c61ec0c7f22ff3"
+    },
+    {
+      "path": "I:\\MyTypora\\UniReadMD-WebUI\\release\\base-sha.txt",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "ff16897353fbc54c04ce0c28231b719bcfc1dab77a8680f5cd7c3700ee08ca58"
+    },
+    {
+      "path": "I:\\MyTypora\\UniReadMD-WebUI\\release\\toolchain-baseline.json",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "2d534b6affb67bd51c0bec4ce0f6ea0b2d6265c0fe65d5b279552c03456416c1"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\AGENTS.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "3a16b87580f6d3b837f5dcb37545681d740d0064a966ada2923515ba5e9d053f"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\project.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "a049a47a555ab4073feec363775470b4e3087434c4bb3898a01e2f5cadde720c"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\proposal.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "b0b93aebd775bd1e6ede827a911192b60025a0c48e8d319edb099dbf76eee652"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\design.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "0740c642a066fa773eee7a929885cc4d3f65aa76af87c924e1bf298a79ff003b"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\tasks.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "2bf2a24dd303beb669b7103b612963d224e7fc6b4ab8bd1137f8289763f4f6c4"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\specs\\secure-markdown\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "a3efbc1e26c1c4224466af656d1259b7dbf2cd97fce7b5a0d67df78d855cffc0"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\specs\\document-integrity\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "f071bbd902e7292954d34e9c4d11afa07f5567010aecb2b4af29182eae8b21f7"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\specs\\document-workspace\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "7b4ff0ad43927c8dc5dd531467ad497696630b4d0ea6a9c6cff9b065e932a285"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\specs\\document-export\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "64d568b5fbce415b5a3eeb6cda0fc6879b7f2b334be6e8488b49d91092034fee"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\changes\\harden-and-complete-unireadmd\\specs\\release-quality\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "26ec2855055ca573aa4df3c0a126107552e7a39ab50f760a7e0fe02faa84039b"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\specs\\secure-markdown\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "6f9add543af0c0fcb8de51fcddd4d4a392538c839c5ec78fff3dfe263ff47ef6"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\specs\\document-integrity\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "61ef4fc90a1a696482235330747b1ac3525d1dc9366c8deb4e504ab5c0c02d0c"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\specs\\document-workspace\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "60056a6af4be3e024d624101afdd2958e64914126447e6d2f71cb94d2c14f03c"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\specs\\document-export\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "a76dfb0b10d1bfac2fb1a033775055189bba28b7656614f7897e79db954183e6"
+    },
+    {
+      "path": "I:\\MyTypora\\openspec\\specs\\release-quality\\spec.md",
+      "utf8NoBom": true,
+      "crlf": true,
+      "bareLfCount": 0,
+      "sha256": "319e0aff62f8170d50f3ea430d73301637ead6c08fee6d813ba316714b030939"
+    }
+  ]
+}

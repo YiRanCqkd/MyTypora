@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-03T15:55:32+08:00",
+  "node": {
+    "packageId": "OpenJS.NodeJS",
+    "packageVersion": "24.8.0",
+    "version": "v24.8.0",
+    "path": "D:\\Program Files\\nodejs\\node.exe",
+    "sha256": "3a9ac860c566b7aebf144be914f95e3ec36dc88040aa7acb5d9d1e6e0c7afd5e"
+  },
+  "npm": {
+    "packageId": "OpenJS.NodeJS",
+    "packageVersion": "24.8.0",
+    "version": "11.6.0",
+    "cliPath": "D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    "nodeRoot": "D:\\Program Files\\nodejs",
+    "sha256": "3ce7cba6f5128dd5f54c98b6a5036b0f850496878cc2e21044b675fe3c594e3e"
+  },
+  "git": {
+    "packageId": "Git.Git",
+    "packageVersion": "2.47.1.2",
+    "version": "git version 2.47.1.windows.2",
+    "path": "D:\\Program Files\\Git\\cmd\\git.exe",
+    "sha256": "332883ea074abeabaa6b2ff4d744371da0fa00d259f7e49d3ab5c8fdfbe80920"
+  }
+}

@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "task": "Task 1 - 初始化并验证 OpenSpec 变更",
+  "changeId": "harden-and-complete-unireadmd",
+  "generatedAt": "2026-08-03T16:43:25.4139436+08:00",
+  "redCommand": {
+    "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js validate harden-and-complete-unireadmd --strict",
+    "exitCode": 1,
+    "notReplayable": true,
+    "fixture": "D drive temporary copy with one Scenario header removed; temp copy cleaned.",
+    "redLog": "red.log"
+  },
+  "greenVerificationCommands": [
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js --version",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 1197
+    },
+    {
+      "command": "& '.\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1'; if ($global:LASTEXITCODE -is [int]) { exit $global:LASTEXITCODE }; if (-not $?) { exit 1 }; exit 0",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 15612
+    },
+    {
+      "command": "& '.\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1' -BaselinePath 'D:\\DevTools\\openspec-task1-evidence-tmp\\missing-baseline.json'; if ($global:LASTEXITCODE -is [int]) { exit $global:LASTEXITCODE }; if (-not $?) { exit 1 }; exit 0",
+      "exitCode": 70,
+      "timedOut": false,
+      "durationMs": 1290
+    },
+    {
+      "command": "& '.\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1' -PathEntriesOverride 'D:\\DevEnv\\nodejs','D:\\Program Files\\Git\\cmd'; if ($global:LASTEXITCODE -is [int]) { exit $global:LASTEXITCODE }; if (-not $?) { exit 1 }; exit 0",
+      "exitCode": 70,
+      "timedOut": false,
+      "durationMs": 12653
+    },
+    {
+      "command": "& '.\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1' -PathEntriesOverride 'D:\\Program Files\\nodejs','D:\\Program Files\\nodejs','D:\\Program Files\\Git\\cmd'; if ($global:LASTEXITCODE -is [int]) { exit $global:LASTEXITCODE }; if (-not $?) { exit 1 }; exit 0",
+      "exitCode": 70,
+      "timedOut": false,
+      "durationMs": 14690
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js validate harden-and-complete-unireadmd --strict",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 1053
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js show harden-and-complete-unireadmd",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": null
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js spec list --long",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 1200
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js show harden-and-complete-unireadmd --json --deltas-only",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": null
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js validate harden-and-complete-unireadmd --strict",
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 1134
+    }
+  ],
+  "specShowCommands": [
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js show secure-markdown --type spec --json",
+      "exitCode": 0,
+      "requirementCount": 2
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js show document-integrity --type spec --json",
+      "exitCode": 0,
+      "requirementCount": 2
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js show document-workspace --type spec --json",
+      "exitCode": 0,
+      "requirementCount": 2
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js show document-export --type spec --json",
+      "exitCode": 0,
+      "requirementCount": 2
+    },
+    {
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js show release-quality --type spec --json",
+      "exitCode": 0,
+      "requirementCount": 2
+    }
+  ],
+  "assertions": [
+    "resolver baseline returned D drive Node npm Git paths",
+    "resolver negative cases returned fixed non-zero codes",
+    "OpenSpec 0.12.0 D drive CLI validated change and specs",
+    "five baseline specs each report requirements greater than zero",
+    "change deltas parse to five capabilities and twenty deltas",
+    "all ADDED and MODIFIED deltas contain Scenario content",
+    "base SHA is lowercase 40 hex and an ancestor of HEAD",
+    "Task 1 text files are UTF-8 no BOM with CRLF"
+  ],
+  "evidenceFiles": [
+    "manifest.json",
+    "red.log",
+    "green.log",
+    "qa-happy.json",
+    "qa-failure.json",
+    "environment.json",
+    "sha256.txt"
+  ],
+  "taskFileHashes": [
+    {
+      "path": "UniReadMD-WebUI/scripts/resolve-toolchain.ps1",
+      "sha256": "a5c09cb6eb8abd149200cedab6bfabaa56c8900ad5356da530c61ec0c7f22ff3"
+    },
+    {
+      "path": "UniReadMD-WebUI/release/base-sha.txt",
+      "sha256": "ff16897353fbc54c04ce0c28231b719bcfc1dab77a8680f5cd7c3700ee08ca58"
+    },
+    {
+      "path": "UniReadMD-WebUI/release/toolchain-baseline.json",
+      "sha256": "2d534b6affb67bd51c0bec4ce0f6ea0b2d6265c0fe65d5b279552c03456416c1"
+    },
+    {
+      "path": "openspec/AGENTS.md",
+      "sha256": "3a16b87580f6d3b837f5dcb37545681d740d0064a966ada2923515ba5e9d053f"
+    },
+    {
+      "path": "openspec/project.md",
+      "sha256": "a049a47a555ab4073feec363775470b4e3087434c4bb3898a01e2f5cadde720c"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/proposal.md",
+      "sha256": "b0b93aebd775bd1e6ede827a911192b60025a0c48e8d319edb099dbf76eee652"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/design.md",
+      "sha256": "0740c642a066fa773eee7a929885cc4d3f65aa76af87c924e1bf298a79ff003b"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/tasks.md",
+      "sha256": "2bf2a24dd303beb669b7103b612963d224e7fc6b4ab8bd1137f8289763f4f6c4"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/specs/secure-markdown/spec.md",
+      "sha256": "a3efbc1e26c1c4224466af656d1259b7dbf2cd97fce7b5a0d67df78d855cffc0"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/specs/document-integrity/spec.md",
+      "sha256": "f071bbd902e7292954d34e9c4d11afa07f5567010aecb2b4af29182eae8b21f7"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/specs/document-workspace/spec.md",
+      "sha256": "7b4ff0ad43927c8dc5dd531467ad497696630b4d0ea6a9c6cff9b065e932a285"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/specs/document-export/spec.md",
+      "sha256": "64d568b5fbce415b5a3eeb6cda0fc6879b7f2b334be6e8488b49d91092034fee"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/specs/release-quality/spec.md",
+      "sha256": "26ec2855055ca573aa4df3c0a126107552e7a39ab50f760a7e0fe02faa84039b"
+    },
+    {
+      "path": "openspec/specs/secure-markdown/spec.md",
+      "sha256": "6f9add543af0c0fcb8de51fcddd4d4a392538c839c5ec78fff3dfe263ff47ef6"
+    },
+    {
+      "path": "openspec/specs/document-integrity/spec.md",
+      "sha256": "61ef4fc90a1a696482235330747b1ac3525d1dc9366c8deb4e504ab5c0c02d0c"
+    },
+    {
+      "path": "openspec/specs/document-workspace/spec.md",
+      "sha256": "60056a6af4be3e024d624101afdd2958e64914126447e6d2f71cb94d2c14f03c"
+    },
+    {
+      "path": "openspec/specs/document-export/spec.md",
+      "sha256": "a76dfb0b10d1bfac2fb1a033775055189bba28b7656614f7897e79db954183e6"
+    },
+    {
+      "path": "openspec/specs/release-quality/spec.md",
+      "sha256": "319e0aff62f8170d50f3ea430d73301637ead6c08fee6d813ba316714b030939"
+    }
+  ],
+  "cleanup": {
+    "tempRoot": "D:\\DevTools\\openspec-task1-evidence-tmp",
+    "tempRootRemovedAfterRun": true,
+    "legacyOpenSpecTargetsAbsent": true
+  },
+  "historicalOneShotVerificationCommands": [
+    {
+      "command": "& '.\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1' -BaselinePath 'D:\\DevTools\\openspec-task1-evidence-tmp\\malformed-baseline.json'; if ($global:LASTEXITCODE -is [int]) { exit $global:LASTEXITCODE }; if (-not $?) { exit 1 }; exit 0",
+      "exitCode": 71,
+      "reason": "Creates a temporary tampered baseline during evidence generation; result is in green.log."
+    },
+    {
+      "command": "& '.\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1' -BaselinePath 'D:\\DevTools\\openspec-task1-evidence-tmp\\version-tamper-baseline.json'; if ($global:LASTEXITCODE -is [int]) { exit $global:LASTEXITCODE }; if (-not $?) { exit 1 }; exit 0",
+      "exitCode": 71,
+      "reason": "Creates a temporary tampered baseline during evidence generation; result is in green.log."
+    },
+    {
+      "command": "& '.\\UniReadMD-WebUI\\scripts\\resolve-toolchain.ps1' -BaselinePath 'D:\\DevTools\\openspec-task1-evidence-tmp\\hash-tamper-baseline.json'; if ($global:LASTEXITCODE -is [int]) { exit $global:LASTEXITCODE }; if (-not $?) { exit 1 }; exit 0",
+      "exitCode": 71,
+      "reason": "Creates a temporary tampered baseline during evidence generation; result is in green.log."
+    }
+  ]
+}
