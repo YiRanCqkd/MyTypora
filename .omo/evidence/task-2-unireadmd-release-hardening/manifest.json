@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 1,
+  "task": "2. 用特征测试拆分前端超大模块",
+  "generatedAt": "2026-08-03T17:36:32.8764953Z",
+  "headBefore": "e3baab50270f122671fba34bbd7847df68a3bbd2",
+  "expectedHeadBefore": "e3baab50270f122671fba34bbd7847df68a3bbd2",
+  "branch": "main",
+  "commitSubject": "refactor(frontend): split workbench responsibilities",
+  "includesFinalCommitHash": false,
+  "commitAllowlist": {
+    "taskFileCount": 107,
+    "taskFiles": "taskFileHashes 的全部 107 个键，包含 106 个产品/测试文件和 .gitattributes",
+    "evidenceFileCount": 7,
+    "evidenceFiles": [
+      ".omo/evidence/task-2-unireadmd-release-hardening/environment.json",
+      ".omo/evidence/task-2-unireadmd-release-hardening/green.log",
+      ".omo/evidence/task-2-unireadmd-release-hardening/manifest.json",
+      ".omo/evidence/task-2-unireadmd-release-hardening/qa-failure.json",
+      ".omo/evidence/task-2-unireadmd-release-hardening/qa-happy.json",
+      ".omo/evidence/task-2-unireadmd-release-hardening/red.log",
+      ".omo/evidence/task-2-unireadmd-release-hardening/sha256.txt"
+    ],
+    "totalFileCount": 114,
+    "derivation": [
+      "worker DoneClaim 的 DESIGN.md、App.vue、Task 2 E2E、初始化特征测试和五领域",
+      "计划 Task 2 的装配层、五领域和特征测试范围",
+      "当前差异中与上述声明精确相交的 106 个产品/测试路径"
+    ]
+  },
+  "redCommand": {
+    "command": "frontend typecheck（实现前 stage-N 工作树）",
+    "notReplayable": true,
+    "nonReplayableReason": "最终 Green 不得回退产品到机械 stage-N 拆分以重放 Red。",
+    "sourceLog": "D:\\DevTools\\unireadmd-task2-worker2\\baseline-typecheck.txt",
+    "sourceLogSha256": "39487be3ed1f17efb48a569f014c2ee5b337940d6f21bce5c0c08327972d742f",
+    "exitCode": 1,
+    "targetDiagnostic": "stage-02.ts(166,43) TS2552: markdownItEmoji 未定义"
+  },
+  "testSummary": {
+    "typecheck": {
+      "exitCode": 0,
+      "diagnostics": 0
+    },
+    "lint": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "vitest": {
+      "exitCode": 0,
+      "total": 69,
+      "passed": 69,
+      "failed": 0,
+      "skipped": 0
+    },
+    "task2E2e": {
+      "exitCode": 0,
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "retried": 0
+    },
+    "fullE2e": {
+      "rawExitCode": 1,
+      "comparatorExitCode": 0,
+      "total": 38,
+      "passed": 26,
+      "knownFailed": 12,
+      "newFailed": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "retried": 0
+    },
+    "productionBuild": {
+      "exitCode": 0,
+      "output": "D:\\DevTools\\unireadmd-task2-finalizer\\build-production",
+      "indexExists": true,
+      "relativeEntryAssets": 2,
+      "missingEntryAssets": 0
+    },
+    "sourceSize": {
+      "exitCode": 0,
+      "appEffectiveLines": 25,
+      "featureTypeScriptFiles": 103,
+      "maximumFeatureEffectiveLines": 202,
+      "limit": 250
+    },
+    "architectureScan": {
+      "exitCode": 0,
+      "domains": [
+        "editor",
+        "export",
+        "markdown",
+        "settings",
+        "workspace"
+      ],
+      "mechanicalFilesOrImports": 0,
+      "prohibitedPatterns": 0,
+      "overlongSourceLines": 0,
+      "templateEqualToParent": true,
+      "stylesEqualToParent": true
+    },
+    "openSpecStrict": {
+      "exitCode": 0,
+      "version": "0.12.0",
+      "valid": true,
+      "archived": false
+    }
+  },
+  "greenVerificationCommands": [
+    {
+      "id": "typecheck",
+      "command": "helper npm --prefix frontend run typecheck",
+      "expectedExitCode": 0,
+      "idempotent": true
+    },
+    {
+      "id": "lint",
+      "command": "helper npm --prefix frontend run lint -- --max-warnings=0",
+      "expectedExitCode": 0,
+      "idempotent": true
+    },
+    {
+      "id": "vitest",
+      "command": "helper npm --prefix frontend run test -- --reporter=json",
+      "expectedExitCode": 0,
+      "assertion": "69/69，0 fail，0 skip",
+      "idempotent": true
+    },
+    {
+      "id": "task2-e2e",
+      "command": "helper npm --prefix frontend run e2e -- task2-characterization.spec.ts",
+      "expectedExitCode": 0,
+      "assertion": "6/6，0 skip/flaky/retry",
+      "idempotent": true
+    },
+    {
+      "id": "full-e2e-baseline",
+      "command": "Playwright JSON 后运行 scripts/check-e2e-baseline.mjs",
+      "expectedExitCode": 0,
+      "assertion": "26 passed、12 known failed、0 skipped、新失败 0",
+      "idempotent": true
+    },
+    {
+      "id": "production-build",
+      "command": "helper npm --prefix frontend run build -- --outDir=<D盘目录>",
+      "expectedExitCode": 0,
+      "idempotent": true
+    },
+    {
+      "id": "source-size-and-architecture",
+      "command": "fixed Node scripts/check-source-size.mjs + 只读架构扫描",
+      "expectedExitCode": 0,
+      "idempotent": true
+    },
+    {
+      "id": "openspec-strict",
+      "command": "fixed Node OpenSpec 0.12.0 validate harden-and-complete-unireadmd --strict",
+      "expectedExitCode": 0,
+      "idempotent": true
+    }
+  ],
+  "manualQa": {
+    "verdict": "PASS",
+    "scope": "Task 2 行为保持与回归门禁",
+    "assertions": [
+      "PASS：默认渲染、Source 直接编辑、预览回写、会话与 dirty 恢复",
+      "PASS：工作区保存、拼写设置 bridge 和 HTML 导出",
+      "PASS：768/1280 表格单元格进入编辑状态",
+      "PASS：375/768/1280 document.scrollWidth 等于 innerWidth",
+      "PASS：标题/段落既有失败经父提交同探针确认，不是 Task 2 新回归"
+    ],
+    "knownLimitations": [
+      "375px 固定 300px 侧栏把正文压缩为窄列，属于父提交既有 CSS/DOM 行为",
+      "标题/段落内联编辑属于全量 E2E 的既有 known failure"
+    ]
+  },
+  "visualQa": {
+    "verdict": "PASS",
+    "passA": "PASS：真实 Vue DOM、设计令牌、职责化模块与公开交互合同完整。",
+    "passB": "PASS：三视口 CJK 无乱码/tofu，未发现 Task 2 新增裁切、重叠或透明异常。",
+    "referenceDiff": {
+      "width": 1440,
+      "height": 900,
+      "diffRatio": 0.0079,
+      "similarityScore": 99,
+      "alphaChannelIntact": true
+    },
+    "screenshotHashes": {
+      "default-375.png": "895f2b02379e41f6a6abd55a44bb9d59def047e04bdad037135c5b926c23686d",
+      "default-768.png": "db8c7ea4e8e7e6c8f6b226fedc6b5bd838954acf5fa40c5804597480d2df78a8",
+      "default-1280.png": "1af3249389671febe5a0aa38ded0b56f1f1255c687bbd586bc12289638845041",
+      "session-recovered-375.png": "1a9096d22b22c3957f934c9a5ba325178a7133f6e8d766a342429dbd6d0b23e7",
+      "session-recovered-768.png": "6c058ace8fbdc3eecd30d702a59563bbef3e86abc0f1d62b1841a2056a9512f4",
+      "session-recovered-1280.png": "0198379bbcce7137b668f22d0c55544fd803fa6a7ef456d897c53fdb747c589a"
+    }
+  },
+  "toolchain": {
+    "node": "D:\\Program Files\\nodejs\\node.exe v24.8.0",
+    "npm": "D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js v11.6.0",
+    "git": "D:\\Program Files\\Git\\cmd\\git.exe",
+    "openSpec": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js v0.12.0",
+    "npmCache": "D:\\DevTools\\npm-cache",
+    "temporaryRoot": "D:\\DevTools\\unireadmd-task2-finalizer"
+  },
+  "evidenceBlobPolicy": {
+    "attributeFile": ".gitattributes",
+    "preservedRule": ".omo/evidence/task-3-unireadmd-release-hardening/** -text",
+    "task2Rule": ".omo/evidence/task-2-unireadmd-release-hardening/** -text",
+    "requiredCommitBlobLineEndings": "CRLF",
+    "sha256Source": "最终 Git index/commit blob 原始字节",
+    "sha256Coverage": "sha256.txt 恰好覆盖其余六个证据文件",
+    "includesFinalCommitHash": false
+  },
+  "taskFileHashPolicy": {
+    "source": "固定 Git 的 index blob 原始字节",
+    "algorithm": "SHA-256",
+    "worktreeAudit": "106 个产品/测试文件另以规范化换行比较确认与 index 语义一致",
+    "commitVerification": "提交后逐项从最终 commit blob 原始字节复核",
+    "excludesEvidenceFiles": true,
+    "supportFiles": [
+      ".gitattributes"
+    ],
+    "hashCount": 107,
+    "includesFinalCommitHash": false
+  },
+  "taskFileHashes": {
+    ".gitattributes": "eba6f9a4a8c7367dfe361d1cf2e216c19a80a0518bb47535f98f016c71b0c219",
+    "UniReadMD-WebUI/DESIGN.md": "3ea39791b952e6b73da34223dea91701b44083871082db0fe2b20caff98d007b",
+    "UniReadMD-WebUI/frontend/e2e/task2-characterization.spec.ts": "5f15e2c11c588ecb5e74a28762cf1ebb2045c07a4b158a96e4152fc3412ccd8a",
+    "UniReadMD-WebUI/frontend/src/App.vue": "18d75158331b7a42edb038a47709363e67a5547a597bd188bb1b2feb27ab4887",
+    "UniReadMD-WebUI/frontend/src/features/editor/application-status.ts": "08049e339a0f756cc7396097a1289e623661cdf337bde3461f6d909e2898659d",
+    "UniReadMD-WebUI/frontend/src/features/editor/codemirror-editor.ts": "8bfcf7693650fcd0078551ee8070e3f492a94c276065a8e7955ffbe6f62c679b",
+    "UniReadMD-WebUI/frontend/src/features/editor/codemirror-feature.ts": "e4b1e1b8385f0758581e467bef6a5209682e715abd4884bbf4f1ee539b1659d9",
+    "UniReadMD-WebUI/frontend/src/features/editor/context-menu-actions.ts": "b5ab6856f1acc4508827afc19e163a143bb8f79864a56b85dcae7c6f3618e985",
+    "UniReadMD-WebUI/frontend/src/features/editor/cursor-position.ts": "18d7224a11b099b4ff912314d1348a1571b9b6d20a3ae9de0a62eee346794ad4",
+    "UniReadMD-WebUI/frontend/src/features/editor/document-search-actions.ts": "17af8555ceb990644049abdb9f91e285cc7f02482f523082ed4a8ccade7c751f",
+    "UniReadMD-WebUI/frontend/src/features/editor/document-search-matches.ts": "a31a5548d4cfce96a93edaf0ebf6e4cda29e2486007dbc7f9b14190383a4d63d",
+    "UniReadMD-WebUI/frontend/src/features/editor/document-search-state.ts": "641a82fe5d1ae11829bde7e9e8a4d4a90ad94d863adbb2c25d8e9e744770fec9",
+    "UniReadMD-WebUI/frontend/src/features/editor/document-statistics.ts": "d00a81145ea2c72a38b0478b80379d75a714c940fff1085866d096f50a98f3b4",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-commands.ts": "5ba295fa6da171088587c8a3ce11141d921c328b3cab34d34a0b386403daa622",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-contracts.ts": "8e80c5e60a717e6ea28a9e29c94ceac27c1d7159d3fa90733bf079dcea1b52dc",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-domain.ts": "60084588670006bc5da09ba9f2b81914615798bbee5c3e093b50d8e88ae33693",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-hosts.ts": "69cdd0a553681cb0eba2cc99540cf06c3d251c215ec5e2538b24099296e29d3f",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-navigation.ts": "cec592a66b3cdd514f8d090d71779505f2052c7bf85a3166b848259270c04778",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-presentation.ts": "c3e2f512a9ce1fc4a7949b8f50b3a02ff74c26bf6ae753c1cb72e4d57966c7cc",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-store.ts": "5c110c1dea760884e8e8cd25ef32fa3c2b7fa8f15f18e425f197d6bc3f5c0c10",
+    "UniReadMD-WebUI/frontend/src/features/editor/editor-synchronization.ts": "f4cf4290a163e815009fee02e33c81886336fa180aaa4c153f1fdd1a78ea6cd5",
+    "UniReadMD-WebUI/frontend/src/features/editor/feature-initialization.ts": "bc49b8cc300d0c41373218c1d6908e4962e027c41d7a5edf4d9b7a46f925324f",
+    "UniReadMD-WebUI/frontend/src/features/editor/keyboard-commands.ts": "16c5866b6c87112f2936a1874419f689c2ef44067d986fca6705a46096e04b42",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-events-feature.ts": "7a23162c54cff1158021c3549e76d56e4ba9e77871e74bce06a46fa3ab3f1cb1",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-events.ts": "c995513a487ff529e77e7df2a6007cd0f2e043d52b4b07fa4486edc295c63907",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-feature.ts": "cc5318391e194f9864bea94de19af6d0b1677b5085361a9febf4cf74dc7ba18e",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-label.ts": "3c86fefa0f6c4fea248ea7321e9892145f75bfb6f11a4889e51bfccb6658edf0",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-ranges.ts": "b93079499d00f1396a9685d3bcbc631f895a60c6a00f784ca8174809ff768988",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-session.ts": "efc8dcb281cd580f4121c0fccdcc88bdecd931339fb78ba444b6b87edf917c51",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-shortcuts.ts": "137c40f18c338aa4b51b5c7eb771f419d9ee9475f9ec1ccb7b71f8f7ae8e05f1",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-editing-state.ts": "63af546f3e2d63c90b02b18c69cfaf2ee1b5db654459ca86db042ef0d40c5fb7",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-interactions.ts": "f2f20f2cf1760269723f95f10c4686d2f04eeb9df1dfd72eac7ad12f95fc262d",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-navigation.ts": "fc932b089aca28608bd8bcd2afb8efa1ad3f93580af183724453a5db5035576d",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-search-dom.ts": "9704d45581edaf8bc8f18285842bd4f1a75f4f9406de29b7a0618399172af494",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-search-highlighting.ts": "98344f89cbabf3706697a2cc14a1defa26b9e9a572b3bba893902fb2d429f77c",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-selection.ts": "1038c5e75331b873a085a31da8e14b4f91b9213f57c02bb9da2cae1bcfea7df1",
+    "UniReadMD-WebUI/frontend/src/features/editor/preview-wheel.ts": "63cbf1217df4b1699d04c452fd0b4609ddcd994ea0946581bf897a226d1d0e43",
+    "UniReadMD-WebUI/frontend/src/features/editor/source-editing-feature.ts": "c0623d2572c8560f6d78fc0e556496e5101b112b0adc5cc2142ac2814731238d",
+    "UniReadMD-WebUI/frontend/src/features/editor/source-editing.ts": "14af222137bf10d0f60b8905b7e93c6231a1a16fe938d28eee6cf6e11dca0971",
+    "UniReadMD-WebUI/frontend/src/features/editor/status-line.ts": "9c4708149962dad64b4bb90c5dc62ef2ad54f0372e25c46b27118bd65184db36",
+    "UniReadMD-WebUI/frontend/src/features/editor/table-actions.ts": "d87d9c328720a43062441baa1292c8ac762facab9ebca9731b78814a220fc717",
+    "UniReadMD-WebUI/frontend/src/features/editor/table-cell-editing.ts": "a691de9a17a37221d39b25ec9474d8e58a3cc3de51c9f2c388df2f4e4a2a538f",
+    "UniReadMD-WebUI/frontend/src/features/editor/table-editing-core.ts": "d41839c5ced6fed92eae46562162c6511e802408678588420146fa6cf860cd67",
+    "UniReadMD-WebUI/frontend/src/features/editor/table-editing-events.ts": "50867a661edc6f1f3364b520473616a35d336f2d0d6d32882cb4b5fdab710a7d",
+    "UniReadMD-WebUI/frontend/src/features/editor/table-editing-feature.ts": "3c8d4f033176b8a52e56102af2fb8ffa5f8032294c984dea48b324f544373f40",
+    "UniReadMD-WebUI/frontend/src/features/editor/table-mutations.ts": "1b6ea70f98a82c577ed5ac423e2e52dec90ea15f712edd6fdb10e642c2891a02",
+    "UniReadMD-WebUI/frontend/src/features/editor/table-navigation.ts": "2c7e8fa4c8cec70a2d3947312b45758cbc054ed0829a39eaa760b44d390c258e",
+    "UniReadMD-WebUI/frontend/src/features/editor/use-workbench.ts": "7a97aa642b044996abc756712a429504df23eacfeaa942b92dbf996ba1fc7f15",
+    "UniReadMD-WebUI/frontend/src/features/editor/viewport-lifecycle.ts": "ae2c6bacba65cb5fe86f76bfbd93c5e0a77e433b9f365507b08bf64197acb45a",
+    "UniReadMD-WebUI/frontend/src/features/editor/workbench-domains.ts": "67962c3fb94795d773ee098609fad1e8fb41c8e754ed8e62fbe661d17501f7ec",
+    "UniReadMD-WebUI/frontend/src/features/editor/workbench-foundation.ts": "2eff925a4549a7228044b6f91ed1b54b31c5f09f44206e8978db11295fdaffa9",
+    "UniReadMD-WebUI/frontend/src/features/editor/workbench-lifecycle.ts": "115b0e02b250aea76c3512b1a047899aae15ae34df0a860773dd692ca8e86356",
+    "UniReadMD-WebUI/frontend/src/features/editor/workbench-runtime-feature.ts": "60fab1dfc8686b918d9f9655cfdc62895080b2b5527a85151f79b539abad1e8e",
+    "UniReadMD-WebUI/frontend/src/features/editor/workbench-runtime.ts": "e3d1c6272d2709ad46448cde6d95639a5aa4ee5d4bc90c1c3b34d8666a519da8",
+    "UniReadMD-WebUI/frontend/src/features/editor/workbench-view.ts": "7c7bf49efcb3919b927dc3640722f7d82acc69f8b174c8a7f4b671195cc15295",
+    "UniReadMD-WebUI/frontend/src/features/editor/workbench-watchers.ts": "1c6dbd30eabdc2396d021d4f27f6da5ab8c712b7d0ece91aa76fae050e900199",
+    "UniReadMD-WebUI/frontend/src/features/export/available-formats.ts": "7d981a5768f8f4e5df13af6704affffa42217c8d7c0465ed180482394b2ad605",
+    "UniReadMD-WebUI/frontend/src/features/export/export-capabilities-state.ts": "83cb448029b9232f8a9a2d68f4de866391acabb5ff2b78eaf6db90730854677f",
+    "UniReadMD-WebUI/frontend/src/features/export/export-capabilities.ts": "aa2e35ab064169b72736b3c7b47cbfc2100661cad97e9c259d8c02714cb95cb8",
+    "UniReadMD-WebUI/frontend/src/features/export/export-document.ts": "04d8f4d0662c0dcff285d23e2cc9fac42df08996c57b54897724c435abba81fc",
+    "UniReadMD-WebUI/frontend/src/features/export/export-domain.ts": "543c9a2326499f3791a98e06678efdaa9c25926895a43c7feb966c5f6efabca3",
+    "UniReadMD-WebUI/frontend/src/features/export/export-feature.ts": "cf8d14222e093fff0121b2f61923a0d94519fd1817c3706905700aee1c62d01c",
+    "UniReadMD-WebUI/frontend/src/features/export/export-formats.ts": "b8bba5460f0d2cc1a88b36636c1871f31c5bf207bb51808ff452c70eb8b34347",
+    "UniReadMD-WebUI/frontend/src/features/export/export-foundation.ts": "3a98658bb4ed142f14d3bb1a064590d2e017b5287b73e92f7b3548e917591b52",
+    "UniReadMD-WebUI/frontend/src/features/feature-initialization.spec.ts": "902f0d288e8e3998562e5808bbda39561131dcabd6d818c69514d9f3d8b79870",
+    "UniReadMD-WebUI/frontend/src/features/markdown/diagram-blocks.ts": "131650a3e9e4f993991e92717abe6335b5d9bb44770631c5820423b4e91015f4",
+    "UniReadMD-WebUI/frontend/src/features/markdown/diagram-feature.ts": "7427fd85b8951f7cf531adde025ea855a53de4615d9d908f28f51a3394f685bb",
+    "UniReadMD-WebUI/frontend/src/features/markdown/diagram-renderer.ts": "e1ad032d109a7cf9475a8f49ef49829a82fdef654fb3f6e8dd6050673ec322ab",
+    "UniReadMD-WebUI/frontend/src/features/markdown/markdown-domain.ts": "1ae58beb027ff3c99755f1b54f7401966d5e9ad7a94db58f967015642dc1d82a",
+    "UniReadMD-WebUI/frontend/src/features/markdown/markdown-feature.ts": "2ab292df8c484ca6672b49098ffa8a549ae7865eda249335fd515825227aaf7e",
+    "UniReadMD-WebUI/frontend/src/features/markdown/renderer-contracts.ts": "0c32a727c73ec141300846df94bf0b9df900e5422c5cf00987aaec00ac75fa45",
+    "UniReadMD-WebUI/frontend/src/features/markdown/renderer.ts": "867cf4d9e064204482f8644667ffe29e05ab6d5338e319050d48eb20d30a52b9",
+    "UniReadMD-WebUI/frontend/src/features/markdown/source-mapping.ts": "6eab559f0cfc86c0a65ff9f4bb59ac6e6581922ccca37a5f55469e0f26058686",
+    "UniReadMD-WebUI/frontend/src/features/settings/appearance.ts": "0303a807850efa225f5f55242a9b4791e1e0c0e8da7c6d0f34af5b75c571400d",
+    "UniReadMD-WebUI/frontend/src/features/settings/content-zoom.ts": "1508f9c8bd5ad017ef1dcead8e5f78116542636b8dcaac646b0f2852c03dcd39",
+    "UniReadMD-WebUI/frontend/src/features/settings/layout-model.ts": "9968cd1d3e307caba4776116a4208ed613446b329ddf16c83b9eebd0cd561c1a",
+    "UniReadMD-WebUI/frontend/src/features/settings/native-command-feature.ts": "b74bdcedc5858d55aab79ea59b5a3a3f63a85656f0bc766a08af090769be1664",
+    "UniReadMD-WebUI/frontend/src/features/settings/native-commands.ts": "091215819680b1701d92ac03396b5fcb266c2f1f32580f389ee42076cf1d84f2",
+    "UniReadMD-WebUI/frontend/src/features/settings/preferences-contracts.ts": "4d99d2e472da1b05e16ab8d9585edee4826fade7010bebfcaf330350a25affbd",
+    "UniReadMD-WebUI/frontend/src/features/settings/preferences.ts": "86da7490207f7066ed7e946ccafd500f8107572542f80c7a8495d53de33fd77a",
+    "UniReadMD-WebUI/frontend/src/features/settings/session-persistence.ts": "f03416260f1acd935505306dd4a750a32f22534d72b16ff70e047d38d369eaed",
+    "UniReadMD-WebUI/frontend/src/features/settings/settings-actions.ts": "f86ac442442f536aff02fcef2d7b85412c0e7c9a9abee9d566824ebfcb5d66c6",
+    "UniReadMD-WebUI/frontend/src/features/settings/settings-domain.ts": "c1b59d2c046dc8c20668ed491e3b5dc09ce2840efc17df0febbebec58cd497e5",
+    "UniReadMD-WebUI/frontend/src/features/settings/settings-foundation.ts": "c2f68b6bfe63e05d0a0fb224c481f48db62a224a2e2af48220a3ecd0ec3d7e75",
+    "UniReadMD-WebUI/frontend/src/features/settings/settings-session.ts": "3d68e805a750eed576c534b83f9d8a946a5b1998e70e955f2cb7d8cec3bade9e",
+    "UniReadMD-WebUI/frontend/src/features/settings/status-labels.ts": "d1ca58da334c19fe6f4f230b915961b31d07bcc9b20b172287d39c657307aa4a",
+    "UniReadMD-WebUI/frontend/src/features/settings/view-options.ts": "792d3b1b01ac5de39e989884f049305a97cbc8588ca5f0746dc66a9dac92a625",
+    "UniReadMD-WebUI/frontend/src/features/settings/workbench-preferences.ts": "ad8f0ed04425250fcd7317a17e581614f201eb5880c9312dc849ef24b3a82996",
+    "UniReadMD-WebUI/frontend/src/features/settings/zoom-label.ts": "dce03e3f26e32f631303e46e1f055271addb7455decf3b8b94acb07898f128f1",
+    "UniReadMD-WebUI/frontend/src/features/workspace/document-loading-state.ts": "4c594f267d5390a468c43e54aa00f974b384cba3cb438a3170dd366c1b7476a3",
+    "UniReadMD-WebUI/frontend/src/features/workspace/document-session.ts": "1666bd0ca25f72573739099bbd886c10771e85b17c9e83277c780d1310eb430d",
+    "UniReadMD-WebUI/frontend/src/features/workspace/file-drop.ts": "4fe82a8b8407bf7ad06e88f6ad390f181632a02c01d4f585f81814c5423d8f61",
+    "UniReadMD-WebUI/frontend/src/features/workspace/file-paths.ts": "1a1cfde0e182f808ce4c36ba96548f3ac9723854d993f831bd376042fc569a96",
+    "UniReadMD-WebUI/frontend/src/features/workspace/file-tree-actions.ts": "fb3b34e376efa1f35d9f8004e5341d2e1d8372bcbf6059e1da795581a42c3ebe",
+    "UniReadMD-WebUI/frontend/src/features/workspace/file-tree.ts": "c84ef4e23756f83507a041936d73938e597922a2171991a242786dc0c30310b3",
+    "UniReadMD-WebUI/frontend/src/features/workspace/layout-metrics.ts": "66c1d7c9bc7c49ef189f235480b676b38e1ccbe8f58cda72a90d2dc9be395b0b",
+    "UniReadMD-WebUI/frontend/src/features/workspace/outline-navigation.ts": "0aead12a5cbc4594c77735ff9dc5d72f371dbe901f3789031cfff02f0f3c4a1d",
+    "UniReadMD-WebUI/frontend/src/features/workspace/recent-files.ts": "819d336a01370f4e76e7eeb90fac1fef764a6b9edef8633ede73fbba8feb07d1",
+    "UniReadMD-WebUI/frontend/src/features/workspace/sidebar-model.ts": "a7d4a331e08f4b6e6280675082ae1e65b66549bdd63ab1bf9935a419114a7a21",
+    "UniReadMD-WebUI/frontend/src/features/workspace/sidebar-tabs.ts": "03eea2fe81a298dc8851a640ec28a52ffa194706e30e7491341a78981f51733c",
+    "UniReadMD-WebUI/frontend/src/features/workspace/task-runner.ts": "cdad558467ecbb0f7d8bebe1943f36f2b7f150a3ade95cbc0fe33964acb8cd6a",
+    "UniReadMD-WebUI/frontend/src/features/workspace/workspace-actions.ts": "93b147c79ff02164ad3f807a021ba3046a5bf3f703308e1c8a00da2ac9f166f8",
+    "UniReadMD-WebUI/frontend/src/features/workspace/workspace-contracts.ts": "ee439cf2cca7a91fc61eec57f3bfa29679c29992881b1dce7991461ef5a92af4",
+    "UniReadMD-WebUI/frontend/src/features/workspace/workspace-domain.ts": "d9b44bb2fab969fab8025cb912de1bc3ba6d16f07616d53e39530b5ca0a5d8b3",
+    "UniReadMD-WebUI/frontend/src/features/workspace/workspace-foundation.ts": "e27b9ef97183e3df3e60520f898baf98e7b22c2bd5a64928d7cc31c567f9203d",
+    "UniReadMD-WebUI/frontend/src/features/workspace/workspace-presentation.ts": "f5f85382de1032f508d3c387c194c73dd32eb69e59b8d5d29a1866085cfbfae0",
+    "UniReadMD-WebUI/frontend/src/features/workspace/workspace-state.ts": "492bd1b3232c06b758f4c25ed3c61355a8d0a3433f31dc6640cce8f5c21171d2"
+  },
+  "adversarialChecks": {
+    "stale_state": {
+      "result": "PASS",
+      "observable": "HEAD 精确匹配要求值；所有产品/测试路径绑定最终 index blob 哈希。"
+    },
+    "dirty_worktree": {
+      "result": "PASS",
+      "observable": "初始索引为空；63 个范围外脏条目逐项保护且门禁后未变化。"
+    },
+    "misleading_success_output": {
+      "result": "PASS",
+      "observable": "全量 Playwright 原始非零；只在完整 JSON 与比较器通过后判定基线成功。"
+    },
+    "malformed_input": {
+      "result": "PASS",
+      "observable": "nativeBridge 缺失被类型化为 ERR_FEATURE_BRIDGE_UNAVAILABLE。"
+    },
+    "hung_or_long_commands": {
+      "result": "PASS",
+      "observable": "首次报告解析超时未计成功；修正解析器后从头重跑并自然退出。"
+    },
+    "flaky_tests": {
+      "result": "PASS",
+      "observable": "最终 Task 2 与全量报告 flaky=0、retry=0；375 手工波动未冒充稳定 Red。"
+    },
+    "repeated_interruptions": {
+      "result": "PASS",
+      "observable": "没有用户请求替换任务；长命令均等待最终退出，未采纳部分输出。"
+    }
+  },
+  "cleanup": {
+    "repositoryArtifacts": "仓库内未生成 build、截图、profile、trace 或临时脚本。",
+    "temporaryRoot": "D:\\DevTools\\unireadmd-task2-finalizer",
+    "policy": "提交后复核完成再删除整个专属临时根。",
+    "port4173ListenersAfterE2e": 0,
+    "matchingNodeProcessesAfterE2e": 0
+  },
+  "risks": [
+    "全量 E2E 仍有 12 项固定 known failure，但没有新增失败或跳过。",
+    "375px 固定侧栏导致正文窄列，属于父提交既有布局，不在 Task 2 扩围修复。",
+    "标题/段落预览内联编辑为父提交既有 known failure，不归因于 Task 2。"
+  ],
+  "finalWhitespaceGate": {
+    "result": "PASS",
+    "pureWhitespaceLinesFixed": 693,
+    "affectedFiles": 58,
+    "semanticComparison": "git diff --ignore-space-at-eol 返回 0",
+    "fullGreenReplay": true
+  }
+}

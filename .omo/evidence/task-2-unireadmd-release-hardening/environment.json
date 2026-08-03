@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-08-03T17:36:32.8764953Z",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "architecture": "X64",
+  "timezone": "China Standard Time",
+  "node": {
+    "path": "D:\\Program Files\\nodejs\\node.exe",
+    "version": "v24.8.0",
+    "sha256": "3a9ac860c566b7aebf144be914f95e3ec36dc88040aa7acb5d9d1e6e0c7afd5e"
+  },
+  "npm": {
+    "path": "D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    "version": "11.6.0",
+    "cache": "D:\\DevTools\\npm-cache"
+  },
+  "git": {
+    "path": "D:\\Program Files\\Git\\cmd\\git.exe",
+    "version": "git version 2.47.1.windows.2"
+  },
+  "openSpec": {
+    "path": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js",
+    "version": "0.12.0"
+  },
+  "repository": {
+    "path": "I:\\MyTypora",
+    "headBefore": "e3baab50270f122671fba34bbd7847df68a3bbd2",
+    "branch": "main",
+    "initialIndexEmpty": true,
+    "initialDirtyEntries": 169,
+    "taskProductAndTestFiles": 106,
+    "outsideDirtyEntriesProtected": 63
+  },
+  "generatedArtifactsRoot": "D:\\DevTools\\unireadmd-task2-finalizer",
+  "generatedArtifactsOnDDrive": true,
+  "secretsCaptured": false
+}

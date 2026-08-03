@@ -1,0 +1,21 @@
+Task 2 历史 Red 证据
+生成时间：2026-08-04 01:36:32 +08:00
+历史来源：D:\DevTools\unireadmd-task2-worker2\baseline-typecheck.txt
+来源 SHA-256：39487be3ed1f17efb48a569f014c2ee5b337940d6f21bce5c0c08327972d742f
+历史退出码：1
+
+命令：frontend typecheck（实现前机械 stage 拆分状态）
+
+> unireadmd-frontend@1.0.0 typecheck
+> vue-tsc --noEmit
+
+src/features/markdown/stage-02.ts(166,43): error TS2552:
+Cannot find name 'markdownItEmoji'. Did you mean 'MarkdownIt'?
+
+结论：Red 为真实实现前工作树输出，证明机械 stage 拆分不能通过类型门禁。
+最终 Green 状态已经删除全部 stage-N 文件，无法在不回退产品的情况下重放该 Red。
+本轮没有回退产品或伪造 Red；manifest 将其标记为历史 Red、不可重放。
+
+失败路径特征证据：
+feature-initialization.spec.ts 固定验证 nativeBridge 缺失时显示
+ERR_FEATURE_BRIDGE_UNAVAILABLE，而不是静默吞掉初始化失败。

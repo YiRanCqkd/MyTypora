@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-08-03T17:36:32.8764953Z",
+  "historicalRed": {
+    "replayed": false,
+    "notReplayable": true,
+    "reason": "实现前 stage-N 工作树已被职责化模块替代，禁止回退产品重放 Red。",
+    "source": "D:\\DevTools\\unireadmd-task2-worker2\\baseline-typecheck.txt",
+    "sourceSha256": "39487be3ed1f17efb48a569f014c2ee5b337940d6f21bce5c0c08327972d742f",
+    "exitCode": 1,
+    "diagnostic": "stage-02.ts TS2552: markdownItEmoji 未定义"
+  },
+  "scenarios": [
+    {
+      "name": "nativeBridge 缺失",
+      "result": "PASS",
+      "expected": "ERR_FEATURE_BRIDGE_UNAVAILABLE",
+      "observable": "错误横幅包含稳定错误码，初始化不再静默失败"
+    },
+    {
+      "name": "全量 E2E 已知失败集合",
+      "result": "PASS",
+      "rawExitCode": 1,
+      "comparatorExitCode": 0,
+      "passed": 26,
+      "knownFailed": 12,
+      "skipped": 0,
+      "newFailures": 0
+    },
+    {
+      "name": "误导性成功输出",
+      "result": "PASS",
+      "observable": "原始 Playwright 非零退出，仅在比较器解析完整 JSON 后判定基线通过"
+    },
+    {
+      "name": "超时与部分输出",
+      "result": "PASS",
+      "observable": "首次 Task 2 报告解析超时未计成功；修正解析器后完整重跑并自然退出"
+    },
+    {
+      "name": "既有预览交互限制",
+      "result": "PASS",
+      "observable": "父提交同探针确认标题/段落不可内联编辑不是 Task 2 新增回归"
+    }
+  ]
+}

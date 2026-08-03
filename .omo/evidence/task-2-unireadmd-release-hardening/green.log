@@ -1,0 +1,91 @@
+Task 2 Finalizer Green
+HEAD before: e3baab50270f122671fba34bbd7847df68a3bbd2
+固定 Node: D:\Program Files\nodejs\node.exe v24.8.0
+固定 npm: D:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js v11.6.0
+固定 npm cache: D:\DevTools\npm-cache
+
+=== typecheck | exit 0 ===
+vue-tsc --noEmit
+无类型诊断。
+
+=== lint | exit 0 ===
+eslint --ext .ts,.vue src --max-warnings=0
+0 错误，0 警告。
+
+=== Vitest JSON | exit 0 ===
+test suites: 18/18 passed
+tests: 69/69 passed
+failed: 0
+pending/skipped: 0
+
+=== Task 2 Playwright | exit 0 ===
+自然退出的最终有效运行：6/6 passed
+failed: 0
+skipped: 0
+flaky: 0
+retry: 0
+说明：首次 Playwright 已通过，但外层报告解析器循环导致超时，未计为成功。
+修正只读解析器后从头重跑，并以本段自然退出结果作为 Green。
+
+=== full Playwright | raw exit 1 ===
+tests: 38
+passed: 26
+failed: 12
+skipped: 0
+flaky: 0
+retry: 0
+原始非零退出符合 12 项已知失败；未把控制台 passed 字样直接当成成功。
+
+=== baseline comparator | exit 0 ===
+E2E_BASELINE_OK {"passed":26,"failed":12,"skipped":0,"knownFailures":12}
+失败 ID 精确属于 e2e/known-failures.json，且没有新增失败。
+
+=== production build | exit 0 ===
+输出：D:\DevTools\unireadmd-task2-finalizer\build-production
+Vite 转换 2096 个模块并自然完成。
+index.html 存在；2 个本地入口均使用 ./assets 相对路径且文件存在。
+Mermaid 大分包为既有非阻断警告。
+
+=== source size | exit 0 ===
+App.vue script: 25 有效行
+features TypeScript: 103 个文件
+最大模块：workbench-lifecycle.ts，202 有效行
+全部模块不超过 250 行。
+
+=== architecture scan | exit 0 ===
+顶层领域：editor、export、markdown、settings、workspace
+stage-N/part-N/chunk-N: 0
+any、TS ignore、lint disable、skip/only: 0
+超过 100 字符的 Task 2 源码行：0
+App.vue template/style 与父提交语义相同。
+
+=== OpenSpec 0.12.0 strict validate | exit 0 ===
+Change 'harden-and-complete-unireadmd' is valid
+未执行 archive。
+
+=== Manual / Visual QA | PASS（Task 2 回归门禁） ===
+375、768、1280 默认态与会话恢复态截图共 6 张，均来自本轮真实 Chromium。
+默认渲染、Source 直接编辑、切回预览、会话恢复和 dirty 状态：PASS。
+768/1280 表格单元格直接编辑：PASS。
+中文标题、段落、侧栏和状态文本无乱码、缺字或 tofu：PASS。
+页面 document.scrollWidth 等于 innerWidth，未出现新增水平滚动：PASS。
+父提交与当前同探针确认标题/段落内联编辑均为既有 known failure。
+375 固定侧栏窄列与表格点击边缘波动为既有布局限制，不归因于 Task 2。
+
+=== image diff | exit 0 ===
+reference/actual: 1440x900
+diffRatio: 0.0079
+similarityScore: 99
+alphaChannelIntact: true
+热点集中于正文容器位置、标题栏文案和既有视觉基线区域。
+
+=== scope protection ===
+初始 169 个脏条目；Task 2 产品/测试 allowlist 106 个。
+范围外 63 个条目的状态、存在性、大小和原始 SHA-256 全部未变化。
+
+=== final whitespace gate and full replay ===
+首次 cached diff check 发现 58 个 Task 2 文件的 693 个纯空白行含两个空格。
+仅清空纯空白行；ignore-space-at-eol 对比确认没有其他语义差异。
+最终 cached diff check 返回 0。
+格式化后重新从头执行 typecheck、Lint、69 项 Vitest、源码大小、架构扫描、
+production build、OpenSpec、Task 2 E2E 和全量 E2E，全部汇总保持不变。

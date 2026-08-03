@@ -1,0 +1,78 @@
+{
+  "status": "PASS",
+  "scope": "Task 2 行为保持与视觉回归门禁",
+  "generatedAt": "2026-08-03T17:36:32.8764953Z",
+  "task2E2e": {
+    "tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "retried": 0
+  },
+  "scenarios": [
+    {
+      "name": "默认渲染与 Source 编辑",
+      "result": "PASS",
+      "assertions": [
+        "默认 Markdown 标题与正文可见",
+        "Source 模式可直接输入中文 Markdown",
+        "切回预览后标题与正文保持"
+      ]
+    },
+    {
+      "name": "会话与脏状态恢复",
+      "result": "PASS",
+      "assertions": [
+        "刷新后中文 Markdown 保持",
+        "dirty 圆点保持",
+        "大纲标题与正文同步"
+      ]
+    },
+    {
+      "name": "工作区、设置和导出",
+      "result": "PASS",
+      "assertions": [
+        "保存后文件树公开虚拟文档",
+        "拼写设置与 bridge 读取一致",
+        "HTML 导出包含渲染标题"
+      ]
+    },
+    {
+      "name": "预览态表格交互",
+      "result": "PASS",
+      "assertions": [
+        "全量 E2E 的表格单元格编辑与导航通过",
+        "768px 和 1280px 手工探针均进入表格编辑器",
+        "375px 固定侧栏窄列波动与父提交同属既有约束"
+      ]
+    }
+  ],
+  "visualQa": {
+    "passA": {
+      "verdict": "PASS",
+      "assertions": [
+        "DESIGN.md 定义真实设计令牌与组件合同",
+        "App.vue template/style 与父提交一致",
+        "界面由真实 Vue DOM、CodeMirror 和领域模块组成，不是截图伪造",
+        "Task 2 六个公开行为场景全部通过"
+      ]
+    },
+    "passB": {
+      "verdict": "PASS",
+      "assertions": [
+        "375/768/1280 的中文标题、正文、大纲和状态文本字形完整",
+        "未发现 Task 2 新增重叠、横向滚动、透明通道或 CJK 回归",
+        "1440x900 相似度 99，diffRatio=0.0079，alpha 完整"
+      ]
+    }
+  },
+  "screenshots": {
+    "default-375.png": "895f2b02379e41f6a6abd55a44bb9d59def047e04bdad037135c5b926c23686d",
+    "default-768.png": "db8c7ea4e8e7e6c8f6b226fedc6b5bd838954acf5fa40c5804597480d2df78a8",
+    "default-1280.png": "1af3249389671febe5a0aa38ded0b56f1f1255c687bbd586bc12289638845041",
+    "session-recovered-375.png": "1a9096d22b22c3957f934c9a5ba325178a7133f6e8d766a342429dbd6d0b23e7",
+    "session-recovered-768.png": "6c058ace8fbdc3eecd30d702a59563bbef3e86abc0f1d62b1841a2056a9512f4",
+    "session-recovered-1280.png": "0198379bbcce7137b668f22d0c55544fd803fa6a7ef456d897c53fdb747c589a"
+  }
+}
