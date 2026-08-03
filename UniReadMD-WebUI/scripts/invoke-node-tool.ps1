@@ -51,9 +51,14 @@ try {
   $previousPath = $env:PATH
   try {
     $systemDirectory = "$($env:SystemRoot)\System32"
+    $powerShellDirectory = Join-Path $systemDirectory 'WindowsPowerShell\v1.0'
     $nodeDirectory = Split-Path -Parent $toolchain.Node
-    $env:PATH = @($nodeDirectory, $systemDirectory) -join [IO.Path]::PathSeparator
-    # Playwright 在 Windows 使用 taskkill.exe 回收 webServer 进程树，因此保留系统工具目录.
+    $env:PATH = @(
+      $nodeDirectory,
+      $systemDirectory,
+      $powerShellDirectory
+    ) -join [IO.Path]::PathSeparator
+    # Playwright 需要 taskkill.exe，electron-builder 需要系统 powershell.exe。
     & $toolchain.Node $toolchain.NpmCli @ToolArguments
     exit $LASTEXITCODE
   } finally {

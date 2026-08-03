@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "task": "5. 升级并锁定存在漏洞的依赖",
+  "executedAt": "2026-08-04T02:06:29.617Z",
+  "gitWhitespaceTdd": {
+    "crlfWithoutAttributeExitCode": 2,
+    "crlfWithRepositoryAttributeExitCode": 0,
+    "realTrailingSpaceExitCode": 2,
+    "globalOrCommandLineOverrideUsedForGreen": false
+  },
+  "malformedDirectLock": {
+    "mutation": "删除 packages['node_modules/dompurify']",
+    "packageJsonRequirementPreserved": true,
+    "rounds": [
+      {
+        "round": 1,
+        "exitCode": 1,
+        "missingMessage": true,
+        "durationMs": 15283
+      },
+      {
+        "round": 2,
+        "exitCode": 1,
+        "missingMessage": true,
+        "durationMs": 13922
+      }
+    ],
+    "cleanup": "completed"
+  },
+  "windowsRenameBoundary": {
+    "retryBudget": {
+      "delaysMs": [
+        250,
+        500,
+        750,
+        1000,
+        1500
+      ],
+      "maximumAttempts": 6,
+      "maximumWaitMs": 4000
+    },
+    "exhaustionProbe": {
+      "errorCode": "EPERM",
+      "calls": 6,
+      "exitCode": 23,
+      "nonZeroRequired": true,
+      "stableRounds": 2
+    },
+    "nonTargetProbe": {
+      "errorCode": "ENOENT",
+      "calls": 1,
+      "exitCode": 24,
+      "nonZeroRequired": true,
+      "stableRounds": 2
+    }
+  },
+  "originalEpermToggle": {
+    "withoutRetryExitCode": 1,
+    "errorCode": "EPERM",
+    "postProcessImmediateRename": "success",
+    "boundedProbeFirstDelayMs": 250,
+    "boundedProbePackExitCode": 0
+  },
+  "commitBlobLineEndingsRed": {
+    "commit": "2d15d9ab654aaf236af69cbc7ca3bc111b467001",
+    "changedPaths": 26,
+    "passed": 16,
+    "failed": 10,
+    "exactFailureSet": true,
+    "bareLfByPath": {
+      "UniReadMD-WebUI/electron/test/packaging.test.cjs": 23,
+      "UniReadMD-WebUI/frontend/package-lock.json": 6800,
+      "UniReadMD-WebUI/frontend/package.json": 71,
+      "UniReadMD-WebUI/frontend/tests/dependency-compat.spec.ts": 81,
+      "UniReadMD-WebUI/frontend/tsconfig.json": 24,
+      "UniReadMD-WebUI/frontend/vitest.baseline.config.ts": 27,
+      "UniReadMD-WebUI/frontend/vitest.config.ts": 53,
+      "UniReadMD-WebUI/package-lock.json": 4052,
+      "UniReadMD-WebUI/scripts/invoke-node-tool.ps1": 70,
+      "openspec/changes/harden-and-complete-unireadmd/tasks.md": 41
+    }
+  }
+}

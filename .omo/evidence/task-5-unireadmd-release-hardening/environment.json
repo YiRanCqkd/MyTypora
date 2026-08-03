@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "capturedAt": "2026-08-04T02:06:29.617Z",
+  "os": {
+    "platform": "Windows",
+    "version": "Microsoft Windows NT 10.0.26200.0",
+    "architecture": "AMD64",
+    "fileSystem": "NTFS",
+    "longPathsEnabled": true
+  },
+  "tools": [
+    {
+      "name": "node",
+      "path": "D:\\Program Files\\nodejs\\node.exe",
+      "version": "24.8.0",
+      "sha256": "3a9ac860c566b7aebf144be914f95e3ec36dc88040aa7acb5d9d1e6e0c7afd5e"
+    },
+    {
+      "name": "npm-cli",
+      "path": "D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+      "version": "11.6.0",
+      "sha256": "3ce7cba6f5128dd5f54c98b6a5036b0f850496878cc2e21044b675fe3c594e3e"
+    },
+    {
+      "name": "git",
+      "path": "D:\\Program Files\\Git\\cmd\\git.exe",
+      "version": "2.47.1.windows.2",
+      "sha256": "332883ea074abeabaa6b2ff4d744371da0fa00d259f7e49d3ab5c8fdfbe80920"
+    },
+    {
+      "name": "openspec",
+      "path": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js",
+      "version": "0.12.0",
+      "sha256": "e3b9fa4fa46b747187aae7e5b08df70bc77e5208cf5c39fdce55fc2db9775c2f"
+    }
+  ],
+  "npmCache": "D:\\DevTools\\npm-cache",
+  "isolatedRoot": "D:\\DevTools\\unireadmd-task5-fixer3",
+  "isolatedRootWasReparsePoint": false,
+  "initialGeneratedState": {
+    "nodeModulesDirectories": 0,
+    "frontendDistExists": false,
+    "unpackedApplicationExists": false,
+    "releaseMetadataPreserved": true
+  },
+  "parentTrackedArchiveState": {
+    "frontendDistExistsBeforeVerificationCleanup": true,
+    "releaseBaseShaExists": true,
+    "releaseToolchainBaselineExists": true,
+    "task5DiffForThesePaths": 0
+  },
+  "securityObservation": {
+    "defenderRealtimeProtection": false,
+    "thirdPartyFileFilterDriversObserved": true,
+    "pathLevelHandleOwnerObserved": false,
+    "attribution": "仅确认瞬态 EPERM，不归因到具体安全软件"
+  },
+  "secretPolicy": "未记录环境变量全集、token、auth、Cookie 或秘密"
+}

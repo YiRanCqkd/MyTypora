@@ -1,0 +1,78 @@
+Task 5 修复 Red 与根因取证
+时间：2026-08-04T05:58:00+08:00 至 2026-08-04T06:38:00+08:00
+
+[Red 1] Git 原始 evidence blob 换行
+命令：git cat-file blob HEAD:.omo/evidence/task-5-unireadmd-release-hardening/<file>
+结果：七文件均 UTF-8 无 BOM；CRLF 0/7；bare LF 计数依次为：
+environment=44，green=376，manifest=171，qa-failure=21，qa-happy=39，
+red=201，sha256=6。
+结论：archive 或工作树转换不能替代原始 Git blob CRLF 门禁。
+
+[Red 2] 无 unpacked 产物运行 test:electron
+前置：node_modules 从零 npm ci；frontend/dist 已删除；win-unpacked 不存在。
+命令：helper npm --prefix <D盘隔离项目> run test:electron
+退出码：1
+计数：12 项中 11 通过、1 失败、0 skipped。
+唯一失败：packaging.test.cjs 报“缺少 unpacked 主程序”。
+结论：普通 Electron 合同错误地在 pack 前依赖打包产物。
+
+[Red 3] verifier 风格长路径运行原始 pack:dir
+路径：D:\DevTools\unireadmd-task5-fixer\red-target\UniReadMD-WebUI
+退出码：1；耗时：85805 ms。
+错误：EPERM rename win-unpacked.tmp -> win-unpacked。
+downloaded 100% 后仍没有 UniReadMD.exe、app.asar 或资源图标。
+失败 tmp 仅是 Electron 基座：75 个文件，364266454 字节。
+
+[H1 路径与权限]
+区分证据：短 D:\u5 对照 pack 退出 0；长 D:\DevTools 根退出 1。
+最长 rename 路径仅 105 字符；LongPathsEnabled=1；D: 为健康 NTFS。
+父目录 ACL 允许 Authenticated Users 修改，无 Deny、只读或重解析点。
+结论：路径环境影响复现概率，但 MAX_PATH、ACL 和链接不是失败机制。
+
+[H2 瞬态占用与时序]
+原始 app-builder-lib 26.15.3 在 extractArchive 中只调用一次 fs.rename。
+builder 失败退出且归属进程为 0 后，对原 tmp 的第 0 ms rename 立即成功。
+隔离 node_modules 切换探针只对目标 EPERM 做有限重试：
+第 1 次 EPERM，等待 250 ms 后同一 builder 进程成功；pack 最终退出 0，
+并生成 UniReadMD.exe、app.asar 和图标。
+结论：确认“瞬态 Windows rename 窗口 + 上游零重试”；未确认具体占用者。
+
+[H3 目录状态]
+每轮目标目录预先不存在；父目录和 tmp 均为普通 Directory。
+同父目录和失败后的原 tmp 直接 rename 成功；无残留归属进程。
+结论：旧目标、只读、重解析点或持久 ACL 不是机制。
+
+[TDD Red]
+transient-rename.test.cjs 因生产模块不存在而 MODULE_NOT_FOUND。
+packaging-flow.test.cjs 两项失败：test:electron 使用通配符包含 packaging，
+且 test:packaging 脚本不存在。
+新增本地 Electron dist 合同时先失败：builderConfig.electronDist 为 undefined。
+
+[二次修复 Red：默认 Git 空白语义]
+时间：2026-08-04T08:31:00+08:00。
+命令：git show --check --oneline --no-renames 591b07b8cc80dcb84605e9e401197d7f778ab5d2
+退出码：2；输出 1687 行，把强制 CRLF 中的 CR 误报为 trailing whitespace。
+对照：命令行 core.whitespace=cr-at-eol 退出 0，但不得作为仓库修复或最终验收。
+属性前状态：代表路径的 whitespace 均为 unspecified。
+
+[二次修复三假设切换]
+H1：D 盘临时 Git 仓库提交 2 个 CRLF、0 个 bare LF，无属性时默认检查退出 2。
+H2：同仓库加入“* whitespace=cr-at-eol”后，check-attr 返回 cr-at-eol，默认检查退出 0。
+H3：同一属性下加入真实行尾空格，默认检查仍退出 2并只报告真实空格。
+结论：仓库属性只豁免 CRLF 的 CR，不吞掉真实 trailing-space；根因与修复均由切换确认。
+
+[三次修复 Red：最终提交原始 blob 换行]
+旧提交：2d15d9ab654aaf236af69cbc7ca3bc111b467001。
+工具：固定 D 盘 node 从 stdin 运行扫描器，内部仅调用固定 D 盘 git cat-file blob。
+结果：26 个变更路径中 16 项通过、10 项失败；失败项均 UTF-8 无 BOM、CRLF=0、bare CR=0。
+UniReadMD-WebUI/electron/test/packaging.test.cjs：bare LF=23，raw SHA-256=d53bb27a1053e076696e8c8f3de1c1898e4998fd2e58d4409880881c4277bd22，语义 SHA-256=d53bb27a1053e076696e8c8f3de1c1898e4998fd2e58d4409880881c4277bd22。
+UniReadMD-WebUI/frontend/package-lock.json：bare LF=6800，raw SHA-256=c261de4c090ca8b1e6b6334654f8bb55b35510b51d3050f7453170514f9047de，语义 SHA-256=c261de4c090ca8b1e6b6334654f8bb55b35510b51d3050f7453170514f9047de。
+UniReadMD-WebUI/frontend/package.json：bare LF=71，raw SHA-256=e3821699b77a2c6345aebaa32bae36c4e05e0f3123575a319ea28c52d1e53c6f，语义 SHA-256=e3821699b77a2c6345aebaa32bae36c4e05e0f3123575a319ea28c52d1e53c6f。
+UniReadMD-WebUI/frontend/tests/dependency-compat.spec.ts：bare LF=81，raw SHA-256=a855216c8208d76ff54b1f9ce2263ca0fda7116c7ac481518e7aabb07b4a1fc5，语义 SHA-256=a855216c8208d76ff54b1f9ce2263ca0fda7116c7ac481518e7aabb07b4a1fc5。
+UniReadMD-WebUI/frontend/tsconfig.json：bare LF=24，raw SHA-256=636b094f23f172ab67881ad9b3eac1dfe6b2c4116cb53b57555759d35526f6cd，语义 SHA-256=636b094f23f172ab67881ad9b3eac1dfe6b2c4116cb53b57555759d35526f6cd。
+UniReadMD-WebUI/frontend/vitest.baseline.config.ts：bare LF=27，raw SHA-256=f3a1fe30b6733bf0dd320570be05f2782224abee54187e2d1be693aa230a17c8，语义 SHA-256=f3a1fe30b6733bf0dd320570be05f2782224abee54187e2d1be693aa230a17c8。
+UniReadMD-WebUI/frontend/vitest.config.ts：bare LF=53，raw SHA-256=24cf904694ef6f3a98e544793da877020c6b7483ff48902a369dad67531ea4de，语义 SHA-256=24cf904694ef6f3a98e544793da877020c6b7483ff48902a369dad67531ea4de。
+UniReadMD-WebUI/package-lock.json：bare LF=4052，raw SHA-256=f1f4275791600ccdda9f400d872d478f44a159431c625d43a984c122e097be57，语义 SHA-256=f1f4275791600ccdda9f400d872d478f44a159431c625d43a984c122e097be57。
+UniReadMD-WebUI/scripts/invoke-node-tool.ps1：bare LF=70，raw SHA-256=102ed1c7631c6a2975943bbc992c14c52a5ea8d00655be250b5c119e5033173f，语义 SHA-256=102ed1c7631c6a2975943bbc992c14c52a5ea8d00655be250b5c119e5033173f。
+openspec/changes/harden-and-complete-unireadmd/tasks.md：bare LF=41，raw SHA-256=ef960b855fe730c7bd7d153776845a28e88b00689d3ebfacf348663b5d21cfd6，语义 SHA-256=ef960b855fe730c7bd7d153776845a28e88b00689d3ebfacf348663b5d21cfd6。
+结论：Red 精确命中 verifier2 的 10 项格式缺陷；既有业务门禁已由 fixer2 与 verifier2 从干净归档独立证明通过。

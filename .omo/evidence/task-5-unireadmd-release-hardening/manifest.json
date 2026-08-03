@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 2,
+  "task": "5. 升级并锁定存在漏洞的依赖",
+  "generatedAt": "2026-08-04T02:06:29.617Z",
+  "headBefore": "374d1bdeb68fbba02efe323632d0949d918f66ad",
+  "candidateProductionTree": "b27597989f011754c254f64d5b9a4f178feb43fe",
+  "rootCause": {
+    "electronTest": "packaging 合同被普通 Electron 套件在 pack 前执行",
+    "eperm": "Electron ZIP 解压后的瞬态 rename EPERM 遇到上游零重试",
+    "cache": "builder 重复网络下载，而 electron@43.2.0 dist 尚未安装",
+    "evidenceEncoding": "七个原始 Git blob 被 LF 规范化",
+    "gitWhitespace": "默认 Git 把项目强制 CRLF 中的 CR 视为 trailing whitespace",
+    "commitBlobEncoding": "10 个最终提交 blob 被 Git 以纯 LF 存储"
+  },
+  "fix": {
+    "electronTest": "普通合同与 test:packaging 分离",
+    "packaging": "pack:dir 成功末尾强制运行 test:packaging",
+    "electronDist": "先从固定 npm cache 安装 Electron，再使用本地 dist",
+    "rename": "仅目标 EPERM 使用 5 次、总 4000 ms 的有限等待",
+    "encoding": "七个 evidence 以原始 CRLF blob 精确入库",
+    "gitWhitespace": "仓库级 cr-at-eol 接受 CRLF，同时继续拒绝真实行尾空格",
+    "commitBlobEncoding": "仅将 10 个 blob 转为 UTF-8 无 BOM、CRLF，归一化语义不变"
+  },
+  "greenCommands": [
+    {
+      "name": "root-npm-ci",
+      "exitCode": 0,
+      "durationMs": 32621
+    },
+    {
+      "name": "frontend-npm-ci",
+      "exitCode": 0,
+      "durationMs": 49551
+    },
+    {
+      "name": "frontend-typecheck",
+      "exitCode": 0,
+      "durationMs": 16782
+    },
+    {
+      "name": "frontend-test-10-files-70-tests",
+      "exitCode": 0,
+      "durationMs": 23928
+    },
+    {
+      "name": "frontend-build-2311-modules",
+      "exitCode": 0,
+      "durationMs": 19082
+    },
+    {
+      "name": "electron-without-release-11-tests",
+      "exitCode": 0,
+      "durationMs": 13301
+    },
+    {
+      "name": "quality-scripts-20-tests",
+      "exitCode": 0,
+      "durationMs": 49623
+    },
+    {
+      "name": "verifier-style-pack-round-1",
+      "exitCode": 0,
+      "durationMs": 46945
+    },
+    {
+      "name": "verifier-style-pack-round-2",
+      "exitCode": 0,
+      "durationMs": 43455
+    },
+    {
+      "name": "openspec-strict",
+      "exitCode": 0
+    }
+  ],
+  "auditMetadata": {
+    "rootFull": {
+      "exitCode": 0,
+      "critical": 0,
+      "high": 0
+    },
+    "rootProduction": {
+      "exitCode": 0,
+      "critical": 0,
+      "high": 0
+    },
+    "frontendFull": {
+      "exitCode": 0,
+      "critical": 0,
+      "high": 0
+    },
+    "frontendProduction": {
+      "exitCode": 0,
+      "critical": 0,
+      "high": 0
+    }
+  },
+  "taskFileHashPolicy": {
+    "source": "候选 Git tree 原始 blob 字节",
+    "algorithm": "SHA-256",
+    "excludesEvidenceFiles": true,
+    "includesFinalCommitHash": false
+  },
+  "taskFileHashes": [
+    {
+      "path": ".gitattributes",
+      "sha256": "c7a459be5f3dbefdb172b39b889b4f3306d060a6a4c7f1a1344c682873608c2c"
+    },
+    {
+      "path": "UniReadMD-WebUI/electron/builder.json",
+      "sha256": "057b4910e1dc91f58f33375ddf364009cf23451a63b41088e1724410f3b3857d"
+    },
+    {
+      "path": "UniReadMD-WebUI/electron/test/electron.test.cjs",
+      "sha256": "eff1402ae2d81ccebfe7e0f65955d9184279913f87f76ff16df8d5ecb5c903e0"
+    },
+    {
+      "path": "UniReadMD-WebUI/electron/test/packaging.test.cjs",
+      "sha256": "4b60dd938d8cca88e6e18504656b5a4b05b845c0142d2d51f8cb9fbad18794bc"
+    },
+    {
+      "path": "UniReadMD-WebUI/frontend/package-lock.json",
+      "sha256": "5018a5398f28a4ba155fec118b8ea7298c87b69b90e1776ded5f32b005a7bd0e"
+    },
+    {
+      "path": "UniReadMD-WebUI/frontend/package.json",
+      "sha256": "81ad66d6e393fc6a9157bca983fccf6b01d8fae0cc1ff752b957fdc6283a335c"
+    },
+    {
+      "path": "UniReadMD-WebUI/frontend/tests/dependency-compat.spec.ts",
+      "sha256": "340b64849d5b6fcbbe2e71d9fe142c36ee48c59ea6c3ab31e3aeb5491684021d"
+    },
+    {
+      "path": "UniReadMD-WebUI/frontend/tsconfig.json",
+      "sha256": "a143be488a21503a7dc31db044f65bbd65bb0ebd994d07a9b6f57cd4b674c069"
+    },
+    {
+      "path": "UniReadMD-WebUI/frontend/vitest.baseline.config.ts",
+      "sha256": "db2f6f3855fe4251af977c5455d4ca3d34b30422207286e46934784d67d73197"
+    },
+    {
+      "path": "UniReadMD-WebUI/frontend/vitest.config.ts",
+      "sha256": "66704ab49759b5698308e41c3ca88162c90132e5e5d26368aaedfab751db6154"
+    },
+    {
+      "path": "UniReadMD-WebUI/package-lock.json",
+      "sha256": "53010227577e62faa4731dbcba7309fe3b7308f9a09911dfd5712191d6867a11"
+    },
+    {
+      "path": "UniReadMD-WebUI/package.json",
+      "sha256": "c556c851d5160a32ce28eb9b0b8a3e9d5651a8a5435891e2a7718cb163ceb489"
+    },
+    {
+      "path": "UniReadMD-WebUI/scripts/invoke-node-tool.ps1",
+      "sha256": "67815dde011dc6d4af0d85452ee686b9b0c60a967bffa4c64540d4098bb11f7d"
+    },
+    {
+      "path": "UniReadMD-WebUI/scripts/pack-electron.cjs",
+      "sha256": "e817dcc5a15f9b89eefe267ce8607bdc5769e0a2ddc117fb6f8a9c10b689c0d5"
+    },
+    {
+      "path": "UniReadMD-WebUI/scripts/test/packaging-flow.test.cjs",
+      "sha256": "43d47e25896fb5ef2b64cce2eda23160831e4eda79b7a26e750adf307e1eec24"
+    },
+    {
+      "path": "UniReadMD-WebUI/scripts/test/task5-regressions.test.mjs",
+      "sha256": "f68513d5114c16f92b90ad1738fd002070416a669402158d8ef1d721c14a9877"
+    },
+    {
+      "path": "UniReadMD-WebUI/scripts/test/transient-rename.test.cjs",
+      "sha256": "593cf4a9d064a386605206bdf600b03606b2421a9a2ce389c3068f679246a5e2"
+    },
+    {
+      "path": "UniReadMD-WebUI/scripts/transient-rename.cjs",
+      "sha256": "2f8de7f98ccdf91d51592385bd7717d142e7244fe57406e7bbb79ee919c61983"
+    },
+    {
+      "path": "openspec/changes/harden-and-complete-unireadmd/tasks.md",
+      "sha256": "53cddb0f79543678ec855e90f8f881ccf5c760eeeb35b4fccf2f6c49dc43b48b"
+    }
+  ],
+  "evidenceFiles": [
+    "environment.json",
+    "green.log",
+    "manifest.json",
+    "qa-failure.json",
+    "qa-happy.json",
+    "red.log",
+    "sha256.txt"
+  ],
+  "prohibitedMechanisms": {
+    "auditFixForce": false,
+    "overrides": false,
+    "ignores": false,
+    "reachabilityExemptions": false,
+    "infiniteRetry": false,
+    "errorSwallowing": false
+  },
+  "warnings": [
+    "Vite 的既有 vendor-mermaid chunk 警告仍存在，但 build 退出 0。",
+    "未把 downloaded 100%、作废轮次或手工 rename 当作打包成功。",
+    "父提交跟踪 dist 与 release 元数据；Task 5 对这些路径 diff 为 0，未跨任务删除。"
+  ],
+  "lineEndingGate": {
+    "redCommit": "2d15d9ab654aaf236af69cbc7ca3bc111b467001",
+    "red": "16/26 pass, 10/26 fail",
+    "green": "26/26 pass",
+    "semanticHashesPreserved": "10/10",
+    "finalCommitHashExcludedToAvoidSelfReference": true
+  }
+}

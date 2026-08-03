@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 2,
+  "task": "5. 升级并锁定存在漏洞的依赖",
+  "executedAt": "2026-08-04T02:06:29.617Z",
+  "gitWhitespace": {
+    "attribute": "whitespace=cr-at-eol",
+    "defaultShowCheckExitCode": 0,
+    "commandLineWhitespaceOverrideUsed": false,
+    "realTrailingSpaceStillRejected": true
+  },
+  "cleanArchive": {
+    "rootNpmCi": 0,
+    "frontendNpmCi": 0,
+    "typecheck": 0,
+    "frontendTest": {
+      "exitCode": 0,
+      "testFiles": "10/10",
+      "tests": "70/70",
+      "skipped": 0
+    },
+    "build": 0,
+    "electronWithoutRelease": {
+      "exitCode": 0,
+      "tests": "11/11",
+      "skipped": 0
+    },
+    "qualityScripts": {
+      "exitCode": 0,
+      "tests": "20/20",
+      "skipped": 0
+    }
+  },
+  "packaging": {
+    "verifierStyleRounds": [
+      {
+        "round": 1,
+        "exitCode": 0,
+        "durationMs": 46945,
+        "ownedProcessesAfter": 0,
+        "ownedListenPortsAfter": 0
+      },
+      {
+        "round": 2,
+        "exitCode": 0,
+        "durationMs": 43455,
+        "ownedProcessesAfter": 0,
+        "ownedListenPortsAfter": 0
+      }
+    ],
+    "standaloneContractRounds": [
+      0,
+      0
+    ],
+    "artifacts": {
+      "executableBytes": 225623552,
+      "appAsarBytes": 5553061,
+      "iconBytes": 46632,
+      "mainInAsar": true,
+      "preloadInAsar": true
+    }
+  },
+  "domFixture": {
+    "validRounds": [
+      0,
+      0
+    ],
+    "titleText": "依赖兼容性",
+    "katexNode": true,
+    "mermaidSvg": true,
+    "capturedErrors": []
+  },
+  "dependencies": {
+    "exactMatches": 13,
+    "overridden": false
+  },
+  "fixer2Replay": {
+    "candidateCommit": "0dfefce34b04e5c412bd39d441b262e06f4b21c4",
+    "rootNpmCiExitCode": 0,
+    "frontendNpmCiExitCode": 0,
+    "typecheckExitCode": 0,
+    "frontendTests": "70/70",
+    "electronWithoutRelease": "11/11",
+    "packagingRounds": 2,
+    "standalonePackagingRounds": 2,
+    "domFixtureRounds": 2,
+    "qualityScriptTests": "20/20"
+  },
+  "openspecStrictExitCode": 0,
+  "archived": false,
+  "fixer3LineEndingReplay": {
+    "candidateProductionTree": "b27597989f011754c254f64d5b9a4f178feb43fe",
+    "changedPaths": 26,
+    "utf8WithoutBom": "26/26",
+    "crlf": "26/26",
+    "bareLf": 0,
+    "bareCr": 0,
+    "semanticHashesPreserved": "10/10",
+    "finalCommitRecordedExternallyToAvoidSelfReference": true
+  }
+}

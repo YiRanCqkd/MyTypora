@@ -13,7 +13,6 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],
       reportsDirectory: 'coverage/baseline',
-      all: true,
       include: [
         'src/**/*.ts',
         'src/**/*.vue',

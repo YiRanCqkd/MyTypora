@@ -10,7 +10,10 @@
     "dev:electron": "wait-on tcp:5173 && set ELECTRON_START_URL=http://127.0.0.1:5173 && electron .\\electron\\main.cjs",
     "build:frontend": "npm --prefix frontend run build",
     "pack:win": "npm run build:frontend && powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\pack_installer.ps1",
-    "pack:dir": "npm run build:frontend && electron-builder --config electron\\builder.json --win --dir && .\\patch_exe_icon.bat \".\\release\\electron\\win-unpacked\\UniReadMD.exe\"",
+    "pack:dir": "npm run pack:prepare && npm run test:packaging",
+    "pack:prepare": "npm run build:frontend && npm run pack:electron && npm run pack:icon",
+    "pack:electron": "node .\\scripts\\pack-electron.cjs",
+    "pack:icon": ".\\patch_exe_icon.bat .\\release\\electron\\win-unpacked\\UniReadMD.exe",
     "dist:win": "npm run build:frontend && electron-builder --config electron\\builder.json --win nsis",
     "dist:nsis": "npm run build:frontend && electron-builder --config electron\\builder.json --win nsis",
     "start:exe": "start_from_exe.bat",
@@ -21,15 +24,16 @@
     "e2e:frontend": "npm --prefix frontend run e2e",
     "lint:frontend": "npm --prefix frontend run lint",
     "test:frontend": "npm --prefix frontend run test",
-    "test:electron": "node --test electron/test/*.test.cjs",
+    "test:electron": "node --test electron/test/electron.test.cjs",
+    "test:packaging": "node --test electron/test/packaging.test.cjs",
     "test:quality-scripts": "node --test scripts/test/*.test.mjs",
     "typecheck:frontend": "npm --prefix frontend run typecheck",
     "start": "electron .\\electron\\main.cjs"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1",
-    "electron": "^37.2.0",
-    "electron-builder": "^26.0.12",
+    "concurrently": "10.0.4",
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3",
     "wait-on": "^8.0.5"
   }
 }

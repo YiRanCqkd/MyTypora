@@ -11,7 +11,7 @@
 - [ ] 2.3 Task 3：保持现有 IPC channel、preload 方法和返回结构兼容。
 
 ## 3. Dependency and Security Hardening
-- [ ] 3.1 Task 5：升级并锁定 Electron、DOMPurify、MarkdownIt、Mermaid、Vite 和 Vitest 等依赖。
+- [x] 3.1 Task 5：升级并锁定 Electron、DOMPurify、MarkdownIt、Mermaid、Vite 和 Vitest 等依赖。
 - [ ] 3.2 Task 6：固定 Markdown HTML 白名单、属性白名单、协议白名单和 Mermaid strict 策略。
 - [ ] 3.3 Task 6：收紧 CSP、BrowserWindow 安全选项、导航、外链、sender 校验和路径授权。
 - [ ] 3.4 Task 6：为 XSS、远端导航、伪造 sender、未授权路径和危险资源添加 Red/Green 证据。

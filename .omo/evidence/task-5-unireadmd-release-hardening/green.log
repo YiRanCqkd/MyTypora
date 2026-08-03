@@ -1,0 +1,89 @@
+Task 5 修复候选 Green
+候选生产树：f346c552437705254d1037bd623f960f8a567f66
+验证根：D:\DevTools\unireadmd-task5-independent-verifier-fixer\target
+
+[安装与顺序门禁]
+root npm ci：exit=0，318 packages，32621 ms。
+frontend npm ci：exit=0，532 packages，49551 ms。
+frontend typecheck：exit=0，16782 ms。
+frontend test：exit=0，10/10 files，70/70 tests，0 skipped，23928 ms。
+frontend build：exit=0，2311 modules，19082 ms。
+无 unpacked 的 test:electron：exit=0，11/11 tests，0 skipped，13301 ms。
+质量脚本完整套件：exit=0，20/20 tests，0 skipped，49623 ms。
+
+[verifier 风格路径 pack:dir]
+每轮开始前 release/electron 不存在。
+Round 1：exit=0，46945 ms；内置 packaging 1/1；归属进程=0；端口=0。
+Round 2：exit=0，43455 ms；内置 packaging 1/1；归属进程=0；端口=0。
+两轮 builder 均记录 using custom unpacked Electron distribution。
+来源为 npm cache 安装后的 node_modules/electron/dist，不重复访问 GitHub。
+
+[打包后独立合同]
+standalone packaging round 1：exit=0，1/1 tests。
+standalone packaging round 2：exit=0，1/1 tests。
+UniReadMD.exe：225623552 bytes。
+resources/app.asar：5553061 bytes。
+resources/res/unireadmd.ico：46632 bytes。
+app.asar：electron/main.cjs=true，electron/preload.cjs=true。
+
+[DOM 兼容]
+前端完整测试已执行真实 MarkdownIt、KaTeX、Mermaid 与 DOMPurify fixture。
+专项有效 round 1：exit=0，1/1 tests。
+专项有效 round 2：exit=0，1/1 tests。
+断言：标题“依赖兼容性”、.katex、section svg、capturedErrors=[]。
+
+[审计]
+root full：exit=0，critical/high/moderate/low/total=0，14779 ms。
+root omit-dev：exit=0，critical/high/moderate/low/total=0，13275 ms。
+frontend full：exit=0，critical/high/moderate/low/total=0，15897 ms。
+frontend omit-dev：exit=0，critical/high/moderate/low/total=0，15074 ms。
+npm ls：13/13 exact，overridden=false。
+OpenSpec 0.12.0 strict：exit=0；未 archive。
+
+[TDD Green]
+目标 EPERM 恢复、耗尽失败、非目标立即失败及流程边界共 7 项回归断言通过。
+这些断言经 task5-regressions.test.mjs 并入质量脚本完整套件。
+
+[作废轮次]
+两次旧下载路径 pack 在 rename 前因 GitHub ETIMEDOUT 退出 1，未计 Green。
+一次 DOM 专项 filter 相对根错误导致未找到测试，未执行测试并已完整重跑两轮。
+一次 Failure QA stdin 参数索引错误导致 MODULE_NOT_FOUND，未计结果并已重跑。
+
+[既有警告]
+Vite 报 vendor-mermaid chunk 超过 900 kB；构建退出 0，未放宽阈值。
+
+[二次修复候选与 Git 门禁]
+候选提交：0dfefce34b04e5c412bd39d441b262e06f4b21c4；未移动 main HEAD。
+候选生产树：6f69ac90d01eab122bb32e1f975eeccdcf6175d0。
+根 .gitattributes 新增“* whitespace=cr-at-eol”；UTF-8 无 BOM、CRLF、0 bare LF。
+默认 git show --check 对候选退出 0；未使用全局配置或命令行 core.whitespace。
+真实 trailing-space 负例默认退出 2，证明门禁没有被放宽。
+
+[二次修复全新归档重放]
+验证根：D:\DevTools\unireadmd-task5-fixer2\candidate。
+归档起点 node_modules=0、release/electron=false；主动删除父提交跟踪的 frontend/dist。
+父提交 release/base-sha.txt 与 release/toolchain-baseline.json 按权威计划保留。
+root npm ci：exit=0，318 packages，47242 ms；0 vulnerabilities。
+frontend npm ci：exit=0，532 packages，70444 ms；0 vulnerabilities。
+typecheck：exit=0，18843 ms；frontend test：exit=0，10/10 files、70/70 tests。
+build：exit=0，2311 modules，26906 ms；无 release 的 Electron：exit=0，11/11。
+quality scripts：exit=0，20/20，0 skipped、0 todo，49141 ms。
+
+[二次修复双轮打包与重复合同]
+pack round 1：exit=0，59089 ms，内置 packaging 1/1。
+pack round 2：exit=0，48356 ms，内置 packaging 1/1。
+第二轮 Electron dist 为 75 文件，递归指纹前后不变；GitHub/download 标记为 0。
+standalone packaging 双轮 exit=0、1/1；DOM fixture 双轮 exit=0、1/1。
+UniReadMD.exe=225623552 bytes；app.asar=5553061 bytes；图标=46632 bytes。
+app.asar 共 103 项，main/preload 均存在；归属进程和监听端口均为 0。
+
+[二次修复审计与失败类]
+四份 audit 均 exit=0、JSON 可解析、critical/high/total=0。
+npm ls 13/13 exact、overridden=false；OpenSpec 0.12.0 strict exit=0，未 archive。
+损坏 DOMPurify direct lock 双轮 exit=1，均明确匹配 Missing 3.4.12。
+rename 耗尽双轮 exit=23、calls=6；非目标双轮 exit=24、calls=1。
+
+[三次修复 Green：候选原始 blob 换行]
+候选生产树：b27597989f011754c254f64d5b9a4f178feb43fe。
+结果：同一 26 路径预测扫描 26/26 为 UTF-8 无 BOM、CRLF>0、bare LF=0、bare CR=0；10 项旧/新归一化语义 SHA-256 为 10/10。
+提交哈希不写入提交自身证据，避免不可满足的自引用；Green 在 commit-tree 后使用同一只读 cat-file 扫描器复核，并由 DoneClaim 记录最终哈希。
