@@ -1,0 +1,132 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-08-03T16:07:37.302Z",
+  "fixtureRoot": "D:\\DevTools\\unireadmd-task3-finalizer\\fixture",
+  "scenarios": [
+    {
+      "name": "authorization/files 打开与另存为",
+      "exitCode": 0,
+      "opened": {
+        "filePath": "D:\\DevTools\\unireadmd-task3-finalizer\\fixture\\source.md",
+        "content": "# 独立 Manual-QA\r\n"
+      },
+      "saved": {
+        "filePath": "D:\\DevTools\\unireadmd-task3-finalizer\\fixture\\saved.md"
+      },
+      "assertions": [
+        "读取内容精确匹配",
+        "另存为路径由对话框授权",
+        "保存内容真实落盘"
+      ]
+    },
+    {
+      "name": "settings 默认值、更新与持久化",
+      "exitCode": 0,
+      "get": {
+        "key": "theme",
+        "value": "light"
+      },
+      "set": {
+        "key": "theme",
+        "value": "dark",
+        "settings": {
+          "theme": "dark",
+          "fontSize": 14,
+          "contentZoom": 100,
+          "viewMode": "split",
+          "autoSave": false,
+          "userCssEnabled": false,
+          "userCssPath": "",
+          "spellCheckEnabled": true,
+          "spellCheckLanguage": "en-US"
+        }
+      },
+      "assertions": [
+        "默认 theme=light",
+        "更新 theme=dark",
+        "settings.json 真实落盘"
+      ]
+    },
+    {
+      "name": "exports 参数规范化与 HTML 落盘",
+      "exitCode": 0,
+      "result": {
+        "jpegPath": "source.jpg",
+        "result": {
+          "filePath": "D:\\DevTools\\unireadmd-task3-finalizer\\fixture\\manual.html",
+          "format": "html",
+          "engine": "builtin"
+        }
+      },
+      "assertions": [
+        "HTML 规范化为 html",
+        "jpeg 派生为 source.jpg",
+        "返回结构保持兼容"
+      ]
+    },
+    {
+      "name": "menus 顶层和命令合同",
+      "exitCode": 0,
+      "result": {
+        "commands": [
+          "file-open"
+        ],
+        "topLevel": [
+          "文件",
+          "编辑",
+          "视图",
+          "窗口",
+          "帮助"
+        ]
+      },
+      "assertions": [
+        "顶层为文件、编辑、视图、窗口、帮助",
+        "打开项发送 file-open"
+      ]
+    },
+    {
+      "name": "preload 与主进程 IPC 合同",
+      "exitCode": 0,
+      "invokeCalls": 29,
+      "uniqueChannels": 26,
+      "channelsMatch": true,
+      "channels": [
+        "app:consumeLaunchFilePath",
+        "app:getVersion",
+        "app:logEvent",
+        "context:showFileTreeMenu",
+        "context:showSourceEditorMenu",
+        "export:document",
+        "export:getCapabilities",
+        "export:html",
+        "file:listMarkdownInDirectory",
+        "file:openFromPath",
+        "file:openMarkdown",
+        "file:saveMarkdown",
+        "settings:get",
+        "settings:getAll",
+        "settings:getRecentFiles",
+        "settings:selectUserCssFile",
+        "settings:set",
+        "settings:setRecentFiles",
+        "spell:getState",
+        "spell:setEnabled",
+        "spell:setLanguage",
+        "window:close",
+        "window:isMaximized",
+        "window:minimize",
+        "window:toggleDevTools",
+        "window:toggleMaximize"
+      ]
+    },
+    {
+      "name": "真实 Electron 隐藏窗口启动",
+      "exitCode": 0,
+      "appReady": true,
+      "rendererDidFinishLoad": true,
+      "exitedBeforeProbe": false,
+      "remainingMatchingProcesses": 0,
+      "runtimeLog": "D:\\DevTools\\unireadmd-task3-finalizer\\electron-smoke-runtime.log"
+    }
+  ]
+}

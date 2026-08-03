@@ -1,0 +1,317 @@
+{
+  "schemaVersion": 1,
+  "task": "3. 用特征测试拆分 Electron 主进程",
+  "generatedAt": "2026-08-03T16:07:37.302Z",
+  "headBefore": "2383b858074c5f72eefb30072f00c7f740619659",
+  "expectedHeadBefore": "2383b858074c5f72eefb30072f00c7f740619659",
+  "branch": "main",
+  "redCommand": {
+    "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 npm -LiteralArguments @('--cache', 'D:\\DevTools\\npm-cache', '--prefix', 'UniReadMD-WebUI', 'run', 'test:electron')",
+    "notReplayable": true,
+    "nonReplayableReason": "仅能在实现前历史工作树重现；最终 Green 状态不得回退产品以重放 Red。",
+    "sourceLog": "D:\\DevTools\\unireadmd-task3-worker\\run-20260803-212044\\red.log",
+    "sourceLogSha256": "9b0618f7e74c523c6711f0cc7afe839a87732197f4b7cf7d0d7613c2aa0ea17f",
+    "exitCode": 1,
+    "testSummary": {
+      "tests": 9,
+      "passed": 6,
+      "failed": 3
+    },
+    "targetTestIds": [
+      "非法设置 key 返回稳定错误码",
+      "超过 20 MiB 的 UTF-8 内容返回稳定错误码",
+      "未授权路径返回稳定错误码"
+    ],
+    "assertions": [
+      "ERR_INVALID_SETTING_KEY 的实际 error.code 为 undefined",
+      "ERR_DOCUMENT_TOO_LARGE 的实际 error.code 为 undefined",
+      "ERR_PATH_NOT_AUTHORIZED 的实际 error.code 为 undefined",
+      "历史 Red 仅有上述 3 个目标失败，无无关失败"
+    ]
+  },
+  "executedCommands": [
+    {
+      "id": "electron-contracts",
+      "startedAt": "2026-08-03T15:52:35.8412113Z",
+      "endedAt": "2026-08-03T15:52:50.4123863Z",
+      "exitCode": 0,
+      "assertions": {
+        "tests": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "quality-fast",
+      "startedAt": "2026-08-03T15:53:06.8603974Z",
+      "endedAt": "2026-08-03T15:54:24.9817719Z",
+      "exitCode": 0,
+      "assertions": {
+        "vitest": "69/69",
+        "electron": "11/11",
+        "qualityScripts": "13/13"
+      }
+    },
+    {
+      "id": "electron-source-size",
+      "startedAt": "2026-08-03T15:55:08.6341479Z",
+      "endedAt": "2026-08-03T15:55:22.8210465Z",
+      "exitCode": 0,
+      "assertions": {
+        "checkedFiles": 17,
+        "maximumEffectiveLines": 172,
+        "limit": 250
+      }
+    },
+    {
+      "id": "electron-syntax",
+      "startedAt": "2026-08-03T15:55:08.3381685Z",
+      "endedAt": "2026-08-03T15:55:22.4158861Z",
+      "exitCode": 0
+    },
+    {
+      "id": "frontend-production-build",
+      "startedAt": "2026-08-03T15:55:40.3622495Z",
+      "endedAt": "2026-08-03T15:56:14.4070601Z",
+      "exitCode": 0,
+      "fixture": "D:\\DevTools\\unireadmd-task3-finalizer\\build",
+      "assertions": {
+        "indexExists": true,
+        "relativeAssetsEntry": true,
+        "assetCount": 68
+      }
+    },
+    {
+      "id": "openspec-strict",
+      "startedAt": "2026-08-03T15:55:09.4805350Z",
+      "endedAt": "2026-08-03T15:55:10.8630593Z",
+      "exitCode": 0,
+      "assertions": {
+        "version": "0.12.0",
+        "valid": true
+      }
+    },
+    {
+      "id": "manual-qa",
+      "startedAt": "2026-08-03T15:58:50.3615757Z",
+      "endedAt": "2026-08-03T15:58:50.6873558Z",
+      "exitCode": 0,
+      "fixture": "D:\\DevTools\\unireadmd-task3-finalizer\\fixture",
+      "assertions": {
+        "adapters": [
+          "authorization",
+          "files",
+          "settings",
+          "exports",
+          "menus"
+        ],
+        "ipcInvokeCalls": 29,
+        "ipcUniqueChannels": 26,
+        "ipcChannelsMatch": true,
+        "stableErrorCodes": [
+          "ERR_INVALID_SETTING_KEY",
+          "ERR_DOCUMENT_TOO_LARGE",
+          "ERR_PATH_NOT_AUTHORIZED"
+        ]
+      }
+    },
+    {
+      "id": "real-electron-hidden-smoke",
+      "startedAt": "2026-08-03T15:59:24.0007654Z",
+      "endedAt": "2026-08-03T15:59:29.6733661Z",
+      "exitCode": 0,
+      "fixture": "D:\\DevTools\\unireadmd-task3-finalizer\\electron-profile",
+      "assertions": {
+        "hiddenLaunch": true,
+        "appReady": true,
+        "rendererDidFinishLoad": true,
+        "exitedBeforeProbe": false,
+        "remainingMatchingProcesses": 0
+      }
+    }
+  ],
+  "greenVerificationCommands": [
+    {
+      "id": "electron-contracts",
+      "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 npm -LiteralArguments @('--cache', 'D:\\DevTools\\npm-cache', '--prefix', 'UniReadMD-WebUI', 'run', 'test:electron')",
+      "expectedExitCode": 0,
+      "assertions": [
+        "11/11 passed",
+        "fail/skip/todo/cancelled 均为 0"
+      ],
+      "idempotent": true
+    },
+    {
+      "id": "quality-fast",
+      "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 npm -LiteralArguments @('--cache', 'D:\\DevTools\\npm-cache', '--prefix', 'UniReadMD-WebUI', 'run', 'quality:fast')",
+      "expectedExitCode": 0,
+      "assertions": [
+        "frontend typecheck 与 Lint 通过",
+        "Vitest 9 files / 69 tests passed",
+        "Electron 11/11 passed",
+        "质量脚本 13/13 passed"
+      ],
+      "idempotent": true
+    },
+    {
+      "id": "electron-source-size",
+      "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 node -LiteralArguments @('UniReadMD-WebUI/scripts/check-source-size.mjs', '--limit', '250', 'UniReadMD-WebUI/electron/main.cjs', <全部16个electron/lib/*.cjs>)",
+      "expectedExitCode": 0,
+      "assertions": [
+        "main.cjs 与全部 16 个 lib 模块均不超过 250 有效行"
+      ],
+      "expandedFiles": [
+        "UniReadMD-WebUI/electron/main.cjs",
+        "UniReadMD-WebUI/electron/lib/app-dialogs.cjs",
+        "UniReadMD-WebUI/electron/lib/authorization.cjs",
+        "UniReadMD-WebUI/electron/lib/context-menus.cjs",
+        "UniReadMD-WebUI/electron/lib/errors.cjs",
+        "UniReadMD-WebUI/electron/lib/export-engines.cjs",
+        "UniReadMD-WebUI/electron/lib/exports.cjs",
+        "UniReadMD-WebUI/electron/lib/files.cjs",
+        "UniReadMD-WebUI/electron/lib/ipc.cjs",
+        "UniReadMD-WebUI/electron/lib/launch.cjs",
+        "UniReadMD-WebUI/electron/lib/menus.cjs",
+        "UniReadMD-WebUI/electron/lib/registry.cjs",
+        "UniReadMD-WebUI/electron/lib/renderer-server.cjs",
+        "UniReadMD-WebUI/electron/lib/runtime.cjs",
+        "UniReadMD-WebUI/electron/lib/settings.cjs",
+        "UniReadMD-WebUI/electron/lib/spell.cjs",
+        "UniReadMD-WebUI/electron/lib/windows.cjs"
+      ],
+      "idempotent": true
+    },
+    {
+      "id": "electron-syntax",
+      "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 node -LiteralArguments @('--check', 'UniReadMD-WebUI/electron/main.cjs')",
+      "expectedExitCode": 0,
+      "idempotent": true
+    },
+    {
+      "id": "frontend-production-build",
+      "command": "& .\\UniReadMD-WebUI\\scripts\\invoke-node-tool.ps1 npm -LiteralArguments @('--cache', 'D:\\DevTools\\npm-cache', '--prefix', 'UniReadMD-WebUI/frontend', 'run', 'build', '--', '--outDir', 'D:\\DevTools\\unireadmd-task3-finalizer\\build', '--emptyOutDir')",
+      "expectedExitCode": 0,
+      "assertions": [
+        "index.html 存在",
+        "./assets 相对入口存在",
+        "68 个 asset"
+      ],
+      "idempotent": true
+    },
+    {
+      "id": "openspec-strict",
+      "command": "& 'D:\\Program Files\\nodejs\\node.exe' 'D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js' validate harden-and-complete-unireadmd --strict",
+      "expectedExitCode": 0,
+      "assertions": [
+        "OpenSpec 版本 0.12.0",
+        "Change 'harden-and-complete-unireadmd' is valid"
+      ],
+      "idempotent": true
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "D:\\DevTools\\unireadmd-task3-finalizer\\fixture",
+      "purpose": "Manual-QA 文件、设置和导出真实落盘",
+      "ephemeral": true,
+      "cleanupRequired": true
+    },
+    {
+      "path": "D:\\DevTools\\unireadmd-task3-finalizer\\electron-profile",
+      "purpose": "真实 Electron 隔离 user-data-dir",
+      "ephemeral": true,
+      "cleanupRequired": true
+    },
+    {
+      "path": "D:\\DevTools\\unireadmd-task3-finalizer\\build",
+      "purpose": "production build 与 Electron 冒烟入口",
+      "ephemeral": true,
+      "cleanupRequired": true
+    }
+  ],
+  "evidenceBlobPolicy": {
+    "attributeFile": ".gitattributes",
+    "attributeRule": ".omo/evidence/task-3-unireadmd-release-hardening/** -text",
+    "scope": ".omo/evidence/task-3-unireadmd-release-hardening/**",
+    "requiredCommitBlobLineEndings": "CRLF",
+    "sha256Manifest": ".omo/evidence/task-3-unireadmd-release-hardening/sha256.txt",
+    "sha256Source": "最终 Git index/commit blob 原始字节",
+    "sha256Coverage": "sha256.txt 恰好覆盖其余六个证据文件",
+    "includesFinalCommitHash": false
+  },
+  "taskFileHashPolicy": {
+    "source": "固定 Git 的 index blob 原始字节",
+    "algorithm": "SHA-256",
+    "commandSurface": "固定 Git 的 git show :path，由固定 Node 以 Buffer 读取 stdout",
+    "worktreeAudit": "另行校验 20 个产品文件和 1 个 Task 3 支撑文件在门禁后未漂移",
+    "commitVerification": "提交后逐项对最终 commit blob 原始字节复核",
+    "excludesEvidenceFiles": true,
+    "supportFiles": [
+      ".gitattributes"
+    ],
+    "hashCount": 21,
+    "includesFinalCommitHash": false
+  },
+  "taskFileHashes": {
+    ".gitattributes": "28c04186d742c82165d2634f9861f2e2fa006744add70c47c66587b80a8b9c31",
+    "UniReadMD-WebUI/electron/main.cjs": "4a6b109e55d8f50583abf070dc69c995671f62f6a6de8bec4c7cd5bd16d0a48d",
+    "UniReadMD-WebUI/electron/lib/app-dialogs.cjs": "b0c645e426f2aab2933071025f960ec0b1befbd8ae17b292fc68a37a658ab530",
+    "UniReadMD-WebUI/electron/lib/authorization.cjs": "938ad44f765cebd9cfec0211be2562f98809424008c3549aabcaad8b18c91114",
+    "UniReadMD-WebUI/electron/lib/context-menus.cjs": "803728c7bd3ff6d9fd93d6f4dae44daf873e15d43bd73fbc03eb52f2ec66fb25",
+    "UniReadMD-WebUI/electron/lib/errors.cjs": "53903cedc06eb0587e3e09d5af1b782b9c5dd904e032585385cdee10ee38b964",
+    "UniReadMD-WebUI/electron/lib/export-engines.cjs": "58067fde47816e2a85cbf162dd2c1cd032834e59519b32e873e5e982310461b8",
+    "UniReadMD-WebUI/electron/lib/exports.cjs": "c7137e9f5f88a66c87de3ccbeb50680b8673229a3ec9990a6ed11d3381fd5a77",
+    "UniReadMD-WebUI/electron/lib/files.cjs": "185409502e03b27388e0a2fb55d33899a3462e61c2bc79abbe31e353b3337b99",
+    "UniReadMD-WebUI/electron/lib/ipc.cjs": "dd36d015d49cf64b98ec1b06712c84b4ce70746db63133618962a3012017a41c",
+    "UniReadMD-WebUI/electron/lib/launch.cjs": "a3a7fe4cc42cfa04bd0704111e99726eb29b1540708c81a151ecd51a84b4827f",
+    "UniReadMD-WebUI/electron/lib/menus.cjs": "aa4ebdda49102b923758831c198880ca6e9e66e2cfb69bf74fc5c3b138aa0192",
+    "UniReadMD-WebUI/electron/lib/registry.cjs": "5d1880235af58b2838cd1c5183a56853ba41e9486e322e11e77086c758d080a9",
+    "UniReadMD-WebUI/electron/lib/renderer-server.cjs": "643ed06796c8a639126fc5831a1f3f718575f984bb76d60a527c739784b6e4c2",
+    "UniReadMD-WebUI/electron/lib/runtime.cjs": "994ed93f2b1babb6b3cbc3aa458f12e1762cb63cadac855370546ca71a168d73",
+    "UniReadMD-WebUI/electron/lib/settings.cjs": "42eb2e1349c18071447705144d7f2bbf47b44bdd7eb9055cc440954c03f9d43e",
+    "UniReadMD-WebUI/electron/lib/spell.cjs": "a3d78e149a530464900d7732f9033b3a9e867f1ec8a6723a495dbfa77c9ebef4",
+    "UniReadMD-WebUI/electron/lib/windows.cjs": "74ded1b2e85ce8af9246de33abbadf35de6427b4c5ad84673be5b1a194fa6460",
+    "UniReadMD-WebUI/electron/test/characterization.test.cjs": "8ecee98797f831c87595bd853c848a93b9e6d68fd933003c5e944e0167453573",
+    "UniReadMD-WebUI/electron/test/failure-contracts.test.cjs": "7ce639a06aa24a3360577e21b719126cf7c8d23a5623bcd6ebe513ef818a6a5f",
+    "UniReadMD-WebUI/electron/test/ipc-contracts.test.cjs": "583dfc2d2e71edc238f99fd023da051558dd1e79657321ac607d1e225f230a24"
+  },
+  "adversarialChecks": {
+    "stale_state": {
+      "result": "PASS",
+      "observable": "HEAD 精确匹配要求值；20 个产品文件在门禁后重新哈希并绑定 manifest。"
+    },
+    "dirty_worktree": {
+      "result": "PASS",
+      "observable": "门禁后暂存区为空；范围外 165 项逐文件建立状态和哈希基线。"
+    },
+    "hung_or_long_commands": {
+      "result": "PASS",
+      "observable": "quality:fast 约 79 秒自然退出；其他门禁均自然退出，无硬超时。"
+    },
+    "malformed_input": {
+      "result": "PASS",
+      "observable": "非法设置 key、超限 UTF-8 内容和未授权路径均返回稳定非成功合同。"
+    },
+    "flaky_tests": {
+      "result": "PASS",
+      "observable": "Electron 合同独立 11/11，随后 quality:fast 内再次 11/11；两轮均无跳过或失败。"
+    },
+    "misleading_success_output": {
+      "result": "PASS",
+      "observable": "除退出码外解析 69/69、11/11、13/13、17 个规模结果、build 入口和 QA 断言。"
+    },
+    "repeated_interruptions": {
+      "result": "PASS",
+      "observable": "所有命令自然完成；Electron PID 树显式回收后 profile 匹配进程为 0。"
+    },
+    "prompt_injection": {
+      "result": "NOT_APPLICABLE",
+      "observable": "没有新增外部或不可信指令输入。"
+    },
+    "cancel_resume": {
+      "result": "NOT_APPLICABLE",
+      "observable": "本次串行 finalizer 未取消或恢复执行。"
+    }
+  }
+}

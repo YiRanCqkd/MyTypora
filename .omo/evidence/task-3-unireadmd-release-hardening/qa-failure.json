@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-08-03T16:07:37.302Z",
+  "historicalRed": {
+    "source": "D:\\DevTools\\unireadmd-task3-worker\\run-20260803-212044\\red.log",
+    "exitCode": 1,
+    "tests": 9,
+    "passed": 6,
+    "failed": 3,
+    "actualCodesBeforeImplementation": [
+      null,
+      null,
+      null
+    ]
+  },
+  "scenarios": [
+    {
+      "name": "非法设置 key",
+      "expectedCode": "ERR_INVALID_SETTING_KEY",
+      "actual": {
+        "code": "ERR_INVALID_SETTING_KEY",
+        "message": "ERR_INVALID_SETTING_KEY: 设置 key 不在白名单中"
+      },
+      "passed": true
+    },
+    {
+      "name": "超过 20 MiB 的 UTF-8 内容",
+      "expectedCode": "ERR_DOCUMENT_TOO_LARGE",
+      "actual": {
+        "code": "ERR_DOCUMENT_TOO_LARGE",
+        "message": "ERR_DOCUMENT_TOO_LARGE: 文档超过 20 MiB 限制"
+      },
+      "passed": true
+    },
+    {
+      "name": "未授权路径",
+      "expectedCode": "ERR_PATH_NOT_AUTHORIZED",
+      "actual": {
+        "code": "ERR_PATH_NOT_AUTHORIZED",
+        "message": "ERR_PATH_NOT_AUTHORIZED: 路径未获得当前窗口授权"
+      },
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+
+> unireadmd-webui@1.0.0 test:electron
+> node --test electron/test/*.test.cjs
+
+✔ Given Electron manifest, when resolving entry files, then main and preload exist (2.2575ms)
+[info] [trace-open] open markdown dialog requested { hasWindow: true }
+✔ 设置适配器保留默认值、有效覆盖和最近文件去重合同 (11.4868ms)
+[info] [trace-open] open markdown success { filePath: 'D:\\DevTools\\unireadmd-task3-file-Re95FM\\source.md' }
+[info] [trace-save] save markdown success { filePath: 'D:\\DevTools\\unireadmd-task3-file-Re95FM\\saved.md' }
+[info] [trace-cancel] open markdown dialog requested { hasWindow: true }
+[info] [trace-cancel] open markdown canceled
+[info] [trace-export] export document start {
+  format: 'html',
+  targetPath: 'D:\\DevTools\\unireadmd-task3-export-B22kPA\\document.html'
+}
+✔ 文件适配器保留打开、保存和取消返回合同 (17.8565ms)
+✔ 授权输入保留仅接受真实 Markdown 启动文件的合同 (36.2502ms)
+[info] [trace-export] export document success {
+  format: 'html',
+  targetPath: 'D:\\DevTools\\unireadmd-task3-export-B22kPA\\document.html',
+  engine: 'builtin'
+}
+✔ 导出适配器保留参数转换、HTML 落盘和返回结构 (8.813ms)
+✔ 菜单模型保留标签、快捷键和渲染器命令合同 (2.8423ms)
+✖ 非法设置 key 返回稳定错误码 (1.9338ms)
+✖ 超过 20 MiB 的 UTF-8 内容返回稳定错误码 (16.6854ms)
+✖ 未授权路径返回稳定错误码 (0.4177ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 6
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 609.3139
+
+✖ failing tests:
+
+test at electron\test\failure-contracts.test.cjs:16:1
+✖ 非法设置 key 返回稳定错误码 (1.9338ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'ERR_INVALID_SETTING_KEY'
+
+      at Object.<anonymous> (I:\MyTypora\UniReadMD-WebUI\electron\test\failure-contracts.test.cjs:10:12)
+      at expectedException (node:assert:576:17)
+      at expectsError (node:assert:701:21)
+      at strict.throws (node:assert:757:3)
+      at TestContext.<anonymous> (I:\MyTypora\UniReadMD-WebUI\electron\test\failure-contracts.test.cjs:17:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'ERR_INVALID_SETTING_KEY',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at electron\test\failure-contracts.test.cjs:23:1
+✖ 超过 20 MiB 的 UTF-8 内容返回稳定错误码 (16.6854ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'ERR_DOCUMENT_TOO_LARGE'
+
+      at Object.<anonymous> (I:\MyTypora\UniReadMD-WebUI\electron\test\failure-contracts.test.cjs:10:12)
+      at expectedException (node:assert:576:17)
+      at expectsError (node:assert:701:21)
+      at strict.throws (node:assert:757:3)
+      at TestContext.<anonymous> (I:\MyTypora\UniReadMD-WebUI\electron\test\failure-contracts.test.cjs:26:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'ERR_DOCUMENT_TOO_LARGE',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at electron\test\failure-contracts.test.cjs:32:1
+✖ 未授权路径返回稳定错误码 (0.4177ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'ERR_PATH_NOT_AUTHORIZED'
+
+      at Object.<anonymous> (I:\MyTypora\UniReadMD-WebUI\electron\test\failure-contracts.test.cjs:10:12)
+      at expectedException (node:assert:576:17)
+      at expectsError (node:assert:701:21)
+      at strict.throws (node:assert:757:3)
+      at TestContext.<anonymous> (I:\MyTypora\UniReadMD-WebUI\electron\test\failure-contracts.test.cjs:35:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'ERR_PATH_NOT_AUTHORIZED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

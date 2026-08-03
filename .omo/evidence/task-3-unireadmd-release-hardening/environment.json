@@ -1,0 +1,38 @@
+{
+  "capturedAt": "2026-08-03T16:01:38.6168054Z",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "architecture": "X64",
+  "timezone": "China Standard Time",
+  "node": {
+    "path": "D:\\Program Files\\nodejs\\node.exe",
+    "version": "v24.8.0",
+    "sha256": "3a9ac860c566b7aebf144be914f95e3ec36dc88040aa7acb5d9d1e6e0c7afd5e"
+  },
+  "npm": {
+    "path": "D:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    "version": "11.6.0",
+    "cache": "D:\\DevTools\\npm-cache"
+  },
+  "git": {
+    "path": "D:\\Program Files\\Git\\cmd\\git.exe",
+    "version": "git version 2.47.1.windows.2"
+  },
+  "openSpec": {
+    "path": "D:\\DevTools\\npm-global\\node_modules\\@fission-ai\\openspec\\bin\\openspec.js",
+    "version": "0.12.0"
+  },
+  "electron": {
+    "path": "I:\\MyTypora\\UniReadMD-WebUI\\node_modules\\electron\\dist\\electron.exe",
+    "packageVersion": "37.10.3"
+  },
+  "repository": {
+    "path": "I:\\MyTypora",
+    "head": "2383b858074c5f72eefb30072f00c7f740619659",
+    "branch": "main",
+    "stagedCountBeforeEvidence": 0,
+    "outsideDirtyEntriesProtected": 165
+  },
+  "generatedArtifactsRoot": "D:\\DevTools\\unireadmd-task3-finalizer",
+  "generatedArtifactsOnDDrive": true,
+  "secretsCaptured": false
+}
