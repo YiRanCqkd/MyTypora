@@ -1,4 +1,5 @@
 import type { ParsedMarkdownTable } from '../../utils/preview-table';
+import { readMarkdownClipboard, writeMarkdownClipboard } from './clipboard-markdown';
 import type { PreviewTableSelection } from './editor-contracts';
 import type { useTableCellEditing } from './table-cell-editing';
 import type { usePreviewInteractions } from './preview-interactions';
@@ -47,7 +48,7 @@ export function useContextMenuActions(input: UseContextMenuActionsDependencies) 
       const text = runtime.editorView.state.doc.sliceString(selection.from, selection.to);
       if (text.length > 0) {
         try {
-          await navigator.clipboard.writeText(text);
+          await writeMarkdownClipboard(text);
         } catch {
           runLegacyEditCommand('copy');
         }
@@ -63,7 +64,7 @@ export function useContextMenuActions(input: UseContextMenuActionsDependencies) 
       if (text.length > 0) {
         let manualCopied = false;
         try {
-          await navigator.clipboard.writeText(text);
+          await writeMarkdownClipboard(text);
           manualCopied = true;
         } catch {
           runLegacyEditCommand('cut');
@@ -91,7 +92,7 @@ export function useContextMenuActions(input: UseContextMenuActionsDependencies) 
 
     if (action === 'paste') {
       try {
-        const text = await navigator.clipboard.readText();
+        const text = await readMarkdownClipboard();
         if (typeof text === 'string') {
           runtime.editorView.dispatch({
             changes: {

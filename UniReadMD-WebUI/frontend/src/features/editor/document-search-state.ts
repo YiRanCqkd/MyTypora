@@ -14,10 +14,11 @@ export function useDocumentSearchState() {
   const docSearchCaseSensitive = ref(false);
 
   const docSearchWholeWord = ref(false);
+  const docSearchRegex = ref(false);
 
   const docSearchMatchIndex = ref(0);
 
   return { showDocSearchPanel,showDocReplacePanel,docSearchInput,docSearchQuery,
-    docReplaceQuery,docSearchCaseSensitive,docSearchWholeWord,docSearchMatchIndex,
+    docReplaceQuery,docSearchCaseSensitive,docSearchWholeWord,docSearchRegex,docSearchMatchIndex,
   };
 }

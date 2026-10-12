@@ -99,6 +99,7 @@ export function usePreviewEditingShortcuts(input: UsePreviewEditingShortcutsDepe
   }
 
   function handlePreviewInlineEditKeydown(event: KeyboardEvent) {
+    if (event.isComposing || input.previewInlineEditComposing.value) return;
     if (!event.altKey && (event.ctrlKey || event.metaKey)) {
       const key = event.key.toLowerCase();
       if (key === 'b') {

@@ -1,5 +1,29 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
+const trustedDrops = new Map();
+document.addEventListener('drop', (event) => {
+  if (!event.isTrusted) return;
+  trustedDrops.clear();
+  for (const file of [...(event.dataTransfer?.files || [])].slice(0, 16)) {
+    const filePath = webUtils.getPathForFile(file);
+    if (filePath) trustedDrops.set(filePath, Date.now());
+  }
+}, true);
+
+function consumeDroppedFile(file) {
+  const filePath = webUtils.getPathForFile(file);
+  const receivedAt = trustedDrops.get(filePath);
+  trustedDrops.delete(filePath);
+  if (!filePath || !receivedAt || Date.now() - receivedAt > 5000) {
+    throw new Error('拖放文件必须来自真实的系统拖放操作');
+  }
+  return filePath;
+}
+
+async function openDroppedFile(file) {
+  return ipcRenderer.invoke('file:openDroppedFile', { filePath: consumeDroppedFile(file) });
+}
+
 function withTracePayload(payload, traceId) {
   return {
     ...(payload || {}),
@@ -31,6 +55,13 @@ const api = {
     },
   },
   file: {
+    openDroppedFile,
+    openLinkedFile: async (payload) => ipcRenderer.invoke('file:openLinkedFile', payload || {}),
+    operate: async (payload) => ipcRenderer.invoke('file:operate', payload || {}),
+    inspect: async (payload) => ipcRenderer.invoke('file:inspect', payload || {}),
+    chooseMoveDirectory: async () => ipcRenderer.invoke('file:chooseMoveDirectory', {}),
+    openDirectory: async (payload) => ipcRenderer.invoke('file:openDirectory', payload || {}),
+    searchDirectory: async (payload) => ipcRenderer.invoke('file:searchDirectory', payload || {}),
     openMarkdown: async (payload) => ipcRenderer.invoke('file:openMarkdown', payload || {}),
     openFromPath: async (payload) => ipcRenderer.invoke('file:openFromPath', payload || {}),
     listMarkdownInDirectory: async (payload) => {
@@ -46,11 +77,30 @@ const api = {
     },
   },
   exporter: {
+    chooseResource: async (kind) => ipcRenderer.invoke('export:chooseResource', { kind }),
+    importDocument: async () => ipcRenderer.invoke('export:importDocument', {}),
     exportHtml: async (payload) => ipcRenderer.invoke('export:html', payload || {}),
     exportDocument: async (payload) => ipcRenderer.invoke('export:document', payload || {}),
     getCapabilities: async (traceId) => {
       return ipcRenderer.invoke('export:getCapabilities', { traceId });
     },
+  },
+  session: {
+    listDrafts: async () => ipcRenderer.invoke('session:listDrafts', {}),
+    restoreDraft: async (id) => ipcRenderer.invoke('session:restoreDraft', { id }),
+    load: async () => ipcRenderer.invoke('session:load', {}),
+    save: async (snapshot) => ipcRenderer.invoke('session:save', { snapshot }),
+    confirmDiscard: async () => ipcRenderer.invoke('document:confirmDiscard', {}),
+  },
+  images: {
+    collect: async (payload) => ipcRenderer.invoke('image:collect', payload || {}),
+    drop: async (file, payload) => ipcRenderer.invoke('image:drop', {
+      ...(payload || {}), filePath: consumeDroppedFile(file),
+    }),
+    applyRoot: async (payload) => ipcRenderer.invoke('image:applyRoot', payload || {}),
+    select: async (payload) => ipcRenderer.invoke('image:select', payload || {}),
+    paste: async (payload) => ipcRenderer.invoke('image:paste', payload || {}),
+    setRoot: async (payload) => ipcRenderer.invoke('image:setRoot', payload || {}),
   },
   window: {
     minimize: async (traceId) => ipcRenderer.invoke('window:minimize', { traceId }),
@@ -60,6 +110,7 @@ const api = {
     toggleDevTools: async (traceId) => ipcRenderer.invoke('window:toggleDevTools', { traceId }),
   },
   settings: {
+    getUserCss: async () => ipcRenderer.invoke('settings:getUserCss', {}),
     getAll: async (traceId) => ipcRenderer.invoke('settings:getAll', { traceId }),
     getRecentFiles: async (traceId) => {
       return ipcRenderer.invoke('settings:getRecentFiles', { traceId });

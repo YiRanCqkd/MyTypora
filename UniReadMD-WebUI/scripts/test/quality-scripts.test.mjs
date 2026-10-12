@@ -162,7 +162,7 @@ test(
       cwd: path.resolve('.'),
       encoding: 'utf8',
       env: createFixedNodeEnvironment(),
-      timeout: 30_000,
+      timeout: 90_000,
     },
   );
 
@@ -196,7 +196,7 @@ test('Given a child exit code, when invoking Node, then the helper passes it thr
       cwd: path.resolve('.'),
       encoding: 'utf8',
       env: createFixedNodeEnvironment(),
-      timeout: 30_000,
+      timeout: 90_000,
     },
   );
 

@@ -5,6 +5,10 @@ interface EditorState {
   content: string;
   isDirty: boolean;
   cursorHint: number;
+  documentRevision: number;
+  resourceBaseUrl: string;
+  version: string;
+  savedContent: string;
 }
 
 interface SessionPayload {
@@ -24,21 +28,34 @@ export const useEditorStore = defineStore('editor', {
     content: '# UniReadMD\n\n在这里输入 Markdown 内容。',
     isDirty: false,
     cursorHint: 0,
+    documentRevision: 0,
+    resourceBaseUrl: '',
+    version: '',
+    savedContent: '# UniReadMD\n\n在这里输入 Markdown 内容。',
   }),
   actions: {
     setContent(content: string) {
       this.content = content;
-      this.isDirty = true;
+      this.isDirty = content !== this.savedContent;
     },
-    setFile(filePath: string, content: string) {
+    setFile(filePath: string, content: string,
+      metadata?: { resourceBaseUrl?: string; version?: string }) {
       this.filePath = filePath;
       this.content = sanitizeLoadedContent(content);
       this.isDirty = false;
       this.cursorHint = 0;
+      this.documentRevision += 1;
+      this.resourceBaseUrl = metadata?.resourceBaseUrl || '';
+      this.version = metadata?.version || '';
+      this.savedContent = this.content;
     },
-    markSaved(filePath: string) {
+    markSaved(filePath: string, savedContent?: string,
+      metadata?: { resourceBaseUrl?: string; version?: string }) {
       this.filePath = filePath;
-      this.isDirty = false;
+      this.savedContent = savedContent ?? this.content;
+      this.isDirty = this.content !== this.savedContent;
+      if (metadata?.resourceBaseUrl) this.resourceBaseUrl = metadata.resourceBaseUrl;
+      if (metadata?.version) this.version = metadata.version;
     },
     setDirty(isDirty: boolean) {
       this.isDirty = isDirty;
@@ -51,6 +68,8 @@ export const useEditorStore = defineStore('editor', {
       this.content = sanitizeLoadedContent(payload.content);
       this.isDirty = payload.isDirty;
       this.cursorHint = payload.cursorHint;
+      this.documentRevision += 1;
+      this.savedContent = payload.isDirty ? '' : this.content;
     },
   },
 });

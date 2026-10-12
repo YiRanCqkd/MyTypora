@@ -1,4 +1,6 @@
-const { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, shell } = require('electron');
+const {
+  app, BrowserWindow, Menu, clipboard, dialog, ipcMain, nativeImage, shell,
+} = require('electron');
 const { spawn } = require('node:child_process');
 const http = require('node:http');
 const fs = require('node:fs/promises');
@@ -7,11 +9,16 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
 const { createAppDialogs } = require('./lib/app-dialogs.cjs');
+const { createAssetService } = require('./lib/assets.cjs');
+const { createSessionService } = require('./lib/sessions.cjs');
+const { validateIpcSender } = require('./lib/security.cjs');
 const { createAuthorizationService } = require('./lib/authorization.cjs');
 const { createContextMenuService } = require('./lib/context-menus.cjs');
 const { createExportEngines } = require('./lib/export-engines.cjs');
 const { createExportsService } = require('./lib/exports.cjs');
 const { createFilesService } = require('./lib/files.cjs');
+const { createWorkspaceTools } = require('./lib/workspace-tools.cjs');
+const { createImageService } = require('./lib/images.cjs');
 const {
   createIpcController,
   sendMenuCommand,
@@ -26,6 +33,10 @@ const { createSettingsService } = require('./lib/settings.cjs');
 const { createSpellService } = require('./lib/spell.cjs');
 const { createWindowService } = require('./lib/windows.cjs');
 
+if (process.env.UNIREADMD_TEST_MODE === '1' && process.env.UNIREADMD_TEST_USER_DATA) {
+  app.setPath('userData', process.env.UNIREADMD_TEST_USER_DATA);
+}
+
 const rootDirectory = path.resolve(__dirname, '..');
 const isDev = Boolean(process.env.ELECTRON_START_URL);
 const runtime = createRuntime({ app, fs, path, spawn });
@@ -33,6 +44,11 @@ const authorization = createAuthorizationService();
 const getEventWindow = (event) => (
   BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow()
 );
+const assets = createAssetService({ fs, getServerUrl: () => rendererServer.getUrl() });
+const sessions = createSessionService({
+  fs, authorization, dialog, getEventWindow,
+  directory: path.join(app.getPath('userData'), 'sessions'),
+});
 const rendererServer = createRendererServer({
   fsSync,
   http,
@@ -40,6 +56,7 @@ const rendererServer = createRendererServer({
   log: runtime.log,
   path,
   rootDirectory,
+  readAsset: assets.read,
 });
 const settings = createSettingsService({
   authorization,
@@ -48,14 +65,32 @@ const settings = createSettingsService({
   getEventWindow,
   getFilePath: runtime.getSettingsFilePath,
   log: runtime.log,
+  enforceAuthorization: true,
+  onChanged: ({ key, value }) => {
+    const name = { documentToolsVisible: 'document-tools', preferencesVisible: 'preferences' }[key];
+    if (!name) return;
+    const item = Menu.getApplicationMenu()?.getMenuItemById(`view-${name}`);
+    if (item) item.checked = value;
+    for (const win of BrowserWindow.getAllWindows()) {
+      sendMenuCommandToWindow(win, `view-${name}-${value ? 'show' : 'hide'}`);
+    }
+  },
 });
 const spell = createSpellService({ getEventWindow, log: runtime.log, settings });
 const files = createFilesService({
+  assets,
   authorization,
   dialog,
   fs,
   getEventWindow,
   log: runtime.log,
+});
+const workspaceTools = createWorkspaceTools({
+  fs, files, assets, authorization, shell, dialog, getEventWindow,
+});
+const images = createImageService({
+  fs, files, assets, authorization, dialog, clipboard, nativeImage, getEventWindow,
+  approvalsPath: path.join(app.getPath('userData'), 'image-root-approvals.json'),
 });
 const engines = createExportEngines({
   app,
@@ -66,6 +101,8 @@ const engines = createExportEngines({
   runCommand: runtime.runCommand,
 });
 const exporters = createExportsService({
+  files,
+  assets,
   authorization,
   dialog,
   engines,
@@ -83,6 +120,7 @@ const launch = createLaunchService({
   path,
 });
 const contextMenus = createContextMenuService({
+  authorization,
   Menu,
   clipboard,
   getEventWindow,
@@ -91,6 +129,8 @@ const contextMenus = createContextMenuService({
   shell,
 });
 const ipc = createIpcController({
+  workspaceTools,
+  images,
   app,
   BrowserWindow,
   contextMenus,
@@ -101,8 +141,12 @@ const ipc = createIpcController({
   runtime,
   settings,
   spell,
+  sessions,
+  validateSender: (event) => validateIpcSender(event, BrowserWindow, windows.getRendererUrl),
 });
 windows = createWindowService({
+  assets,
+  sessions,
   app,
   BrowserWindow,
   fsSync,
@@ -130,12 +174,16 @@ function getPrimaryWindow() {
   return BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0] || null;
 }
 
-function setupMenu() {
+async function setupMenu(pandocFormats = []) {
   const getTarget = () => getPrimaryWindow();
+  const { settings: preferences } = await settings.getAll();
   setupApplicationMenu(Menu, {
+    documentToolsVisible: preferences.documentToolsVisible,
+    preferencesVisible: preferences.preferencesVisible,
     onAbout: () => void appDialogs.showAbout(getTarget()),
     onSetDefaultReader: () => void appDialogs.showSetDefaultReader(getTarget()),
     sendCommand: (command) => sendMenuCommand(BrowserWindow, command),
+    pandocFormats,
   });
 }
 
@@ -146,9 +194,10 @@ if (!hasSingleInstanceLock) app.quit();
 
 app.whenReady().then(async () => {
   await runtime.initializePaths();
+  await sessions.initialize();
   await rendererServer.start();
   ipc.registerAll();
-  setupMenu();
+  await setupMenu();
   runtime.log('info', 'app ready', runtime.createTraceId('boot'));
   if (launch.getPending().length > 0) {
     runtime.log('info', 'launch markdown detected', runtime.createTraceId('boot'), {
@@ -156,6 +205,8 @@ app.whenReady().then(async () => {
     });
   }
   windows.create(launch.consumePending());
+  while (sessions.getRecoveryCount() > 0) windows.create();
+  void engines.getCapabilities().then((capabilities) => setupMenu(capabilities.pandocFormats));
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) windows.create();
   });

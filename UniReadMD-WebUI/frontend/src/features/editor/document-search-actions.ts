@@ -1,5 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import { nextTick } from 'vue';
+import { replaceCurrentSearchMatch, replaceSearchMatches } from './search-pattern';
 import type { useDocumentSearchMatches } from './document-search-matches';
 import type { usePreviewInteractions } from './preview-interactions';
 import type { useCursorPosition } from './cursor-position';
@@ -25,7 +26,8 @@ type UseDocumentSearchActionsDependencies =
 export function useDocumentSearchActions(input: UseDocumentSearchActionsDependencies) {
   const { buildSearchRegExp,closePreviewTableMenu,closeSourceContextMenu,currentCursorLine,
     docReplaceQuery,docSearchCaseSensitive,docSearchMatchIndex,docSearchMatches,docSearchQuery,
-    docSearchWholeWord,normalizeSearchIndex,previewTableMenuVisible,runtime,scrollPreviewToLine,
+    docSearchWholeWord,docSearchRegex,normalizeSearchIndex,previewTableMenuVisible,runtime,
+    scrollPreviewToLine,
     showDocReplacePanel,showDocSearchPanel,sourceContextMenuVisible,sourceMode,store,
   } = input;
 
@@ -94,9 +96,12 @@ export function useDocumentSearchActions(input: UseDocumentSearchActionsDependen
 
     const normalized = normalizeSearchIndex(docSearchMatchIndex.value, matches.length);
     const target = matches[normalized];
-    const nextContent = `${store.content.slice(0, target.from)}${docReplaceQuery.value}${
-      store.content.slice(target.to)
-    }`;
+    const expression = buildSearchRegExp(docSearchQuery.value,
+      docSearchCaseSensitive.value, docSearchWholeWord.value, false);
+    if (!expression) return;
+    const nextContent = replaceCurrentSearchMatch(
+      store.content, expression, target.from, docReplaceQuery.value, docSearchRegex?.value,
+    );
     store.setContent(nextContent);
 
     nextTick(() => {
@@ -120,7 +125,9 @@ export function useDocumentSearchActions(input: UseDocumentSearchActionsDependen
       return;
     }
 
-    const nextContent = store.content.replace(expression, docReplaceQuery.value);
+    const nextContent = replaceSearchMatches(
+      store.content, expression, docReplaceQuery.value, docSearchRegex?.value,
+    );
     store.setContent(nextContent);
 
     nextTick(() => {

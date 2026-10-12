@@ -1,4 +1,6 @@
 import { Transaction } from '@codemirror/state';
+import { isolateHistory } from '@codemirror/commands';
+import { findInlineFragment } from './inline-fragment';
 import type { createMarkdownRenderer } from '../markdown/renderer';
 import type { createPreviewEditingRanges } from './preview-editing-ranges';
 import type { usePreviewEditingState } from './preview-editing-state';
@@ -15,6 +17,7 @@ export function usePreviewEditingSession(input: UsePreviewEditingSessionDependen
     normalizePreviewInlineEditContent,previewInlineEditComposing,previewInlineEditSelection,
     previewInlineEditSession,previewInlineEditStyle,previewInlineEditValue,
     previewInlineEditVisible,runtime,
+    markPreviewEditingBlocks,
   } = input;
 
   function refreshPreviewInlineEditorPosition() {
@@ -22,8 +25,17 @@ export function usePreviewEditingSession(input: UsePreviewEditingSessionDependen
       return;
     }
 
+    const session = previewInlineEditSession.value;
+    if (session?.fragment
+      && !findInlineFragment(session.appliedText, 0, session.fragment.selector)) {
+      closePreviewInlineEditor();
+      return;
+    }
+
     const anchorNode = findPreviewInlineEditAnchorNode();
     if (!anchorNode) {
+      // 移除格式标记后结束片段编辑，已写回的普通文本仍保留。
+      if (previewInlineEditSession.value?.fragment) closePreviewInlineEditor();
       return;
     }
 
@@ -33,6 +45,8 @@ export function usePreviewEditingSession(input: UsePreviewEditingSessionDependen
     }
 
     previewInlineEditStyle.value = nextStyle;
+    anchorNode.classList.add(previewInlineEditSession.value?.fragment
+      ? 'preview-editing-fragment' : 'preview-editing-block');
     const nextToken = anchorNode.dataset.sourceToken || '';
     if (!nextToken) {
       return;
@@ -81,12 +95,16 @@ export function usePreviewEditingSession(input: UsePreviewEditingSessionDependen
         insert,
       },
       selection: {
-        anchor: session.from + insert.length,
+        anchor: session.from + Math.min(insert.length,
+          input.previewInlineEditTextarea.value?.selectionStart ?? insert.length),
+        head: session.from + Math.min(insert.length,
+          input.previewInlineEditTextarea.value?.selectionEnd ?? insert.length),
       },
       annotations: Transaction.userEvent.of('input.type'),
     });
 
-    const lineCount = getPreviewInlineEditLineCount(insert);
+    const lineDelta = getPreviewInlineEditLineCount(insert)
+      - getPreviewInlineEditLineCount(session.appliedText);
     previewInlineEditSession.value = {
       ...session,
       to: session.from + insert.length,
@@ -94,7 +112,7 @@ export function usePreviewEditingSession(input: UsePreviewEditingSessionDependen
     };
     previewInlineEditSelection.value = {
       ...selection,
-      endLine: session.startLine + lineCount - 1,
+      endLine: selection.endLine + lineDelta,
     };
   }
 
@@ -116,6 +134,9 @@ export function usePreviewEditingSession(input: UsePreviewEditingSessionDependen
       revert?: boolean;
     },
   ) {
+    const anchorNode = findPreviewInlineEditAnchorNode();
+    markPreviewEditingBlocks?.(true);
+    anchorNode?.classList.remove('preview-editing-block');
     const currentSession = previewInlineEditSession.value;
     const shouldRevert = Boolean(options?.revert);
     if (shouldRevert) {
@@ -147,6 +168,7 @@ export function usePreviewEditingSession(input: UsePreviewEditingSessionDependen
     }
 
     previewInlineEditSession.value = null;
+    runtime.editorView?.dispatch({ annotations: isolateHistory.of('after') });
   }
 
   function cancelPreviewInlineEdit() {

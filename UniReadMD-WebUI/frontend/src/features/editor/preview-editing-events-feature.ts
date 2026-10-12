@@ -5,9 +5,11 @@ import type { usePreviewEditingFeature } from './preview-editing-feature';
 import { usePreviewEditingShortcuts } from './preview-editing-shortcuts';
 import type { useTableEditingCore } from './table-editing-core';
 import type { useWorkbenchFoundation } from './workbench-foundation';
+import type { useEditorNavigation } from './editor-navigation';
 
 type PreviewEditingEventsDependencies = Readonly<{
   editor: ReturnType<typeof useWorkbenchFoundation>;
+  navigation: ReturnType<typeof useEditorNavigation>;
   presentation: ReturnType<typeof useEditorPresentation>;
   preview: ReturnType<typeof usePreviewEditingFeature>;
   settings: ReturnType<typeof useSettingsFoundation>;
@@ -17,6 +19,7 @@ type PreviewEditingEventsDependencies = Readonly<{
 export function usePreviewEditingEventsFeature(input: PreviewEditingEventsDependencies) {
   const events = usePreviewEditingEvents({
     ...input.editor,
+    ...input.navigation,
     ...input.presentation,
     ...input.preview,
     ...input.settings,

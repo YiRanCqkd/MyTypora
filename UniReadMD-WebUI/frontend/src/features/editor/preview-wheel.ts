@@ -12,6 +12,7 @@ export function usePreviewWheel(input: UsePreviewWheelDependencies) {
   } = input;
 
   function handleGlobalWheel(event: WheelEvent) {
+    if (event.defaultPrevented || event.deltaY === 0) return;
     const target = event.target instanceof HTMLElement ? event.target : null;
     const isZoomGesture = event.ctrlKey || event.metaKey;
     if (isZoomGesture && target && editorPreviewHost.value?.contains(target)) {

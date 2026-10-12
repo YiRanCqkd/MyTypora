@@ -50,10 +50,14 @@ function ensureOpenFileResult(
   if (value === null) {
     return null;
   }
+  if (!value || typeof value !== 'object') throw new Error(`${context} 返回非法数据`);
 
   return {
     filePath: ensureStringField(value.filePath, 'filePath', context),
     content: ensureStringField(value.content, 'content', context),
+    ...(typeof value.resourceBaseUrl === 'string'
+      ? { resourceBaseUrl: value.resourceBaseUrl } : {}),
+    ...(typeof value.version === 'string' ? { version: value.version } : {}),
   };
 }
 
@@ -90,9 +94,14 @@ function ensureSaveFileResult(
   if (value === null) {
     return null;
   }
+  if (!value || typeof value !== 'object') throw new Error(`${context} 返回非法数据`);
 
   return {
     filePath: ensureStringField(value.filePath, 'filePath', context),
+    ...(typeof value.content === 'string' ? { content: value.content } : {}),
+    ...(typeof value.resourceBaseUrl === 'string'
+      ? { resourceBaseUrl: value.resourceBaseUrl } : {}),
+    ...(typeof value.version === 'string' ? { version: value.version } : {}),
   };
 }
 
@@ -213,6 +222,8 @@ function ensureDirectoryMarkdownResult(
   return {
     directoryPath,
     filePaths,
+    ...(value.modifiedTimes ? { modifiedTimes: value.modifiedTimes } : {}),
+    ...(value.directories ? { directories: value.directories } : {}),
   };
 }
 

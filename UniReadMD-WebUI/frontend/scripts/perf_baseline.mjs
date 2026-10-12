@@ -1,3 +1,5 @@
+import { extractHeadings, findActiveHeadingLine, findMatchedLines }
+  from '../src/utils/markdown.ts';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,57 +10,6 @@ const __dirname = dirname(__filename);
 const perfDir = join(__dirname, '..', 'perf');
 const latestPath = join(perfDir, 'latest.json');
 const baselinePath = join(perfDir, 'baseline.json');
-
-function extractHeadings(content) {
-  const lines = content.split(/\r?\n/);
-  const output = [];
-
-  lines.forEach((line, index) => {
-    const match = /^(#{1,6})\s+(.+)$/.exec(line.trim());
-    if (!match) {
-      return;
-    }
-
-    output.push({
-      line: index + 1,
-      level: match[1].length,
-      text: match[2],
-    });
-  });
-
-  return output;
-}
-
-function findActiveHeadingLine(headings, cursorLine) {
-  let matchedLine = 0;
-
-  for (const heading of headings) {
-    if (heading.line <= cursorLine) {
-      matchedLine = heading.line;
-      continue;
-    }
-
-    break;
-  }
-
-  return matchedLine;
-}
-
-function findMatchedLines(content, query, maxResults = 200) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) {
-    return [];
-  }
-
-  return content
-    .split(/\r?\n/)
-    .map((line, index) => ({
-      lineNo: index + 1,
-      line,
-    }))
-    .filter((item) => item.line.toLowerCase().includes(normalized))
-    .slice(0, maxResults);
-}
 
 function buildLargeMarkdown(targetBytes = 5 * 1024 * 1024) {
   const blocks = [];

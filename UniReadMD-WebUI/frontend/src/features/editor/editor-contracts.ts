@@ -18,6 +18,7 @@ export interface PreviewInlineEditSession {
   startLine: number;
   originalText: string;
   appliedText: string;
+  fragment?: { selector: string; index: number };
 }
 
 export interface PreviewTableSelection {
@@ -40,7 +41,17 @@ export interface PreviewTaskItemContext {
 }
 
 export interface WorkbenchRuntime {
+  documentRevision?: number;
+  resetDocument?: (content: string) => void;
+  flushEdits?: () => void;
+  flushVisualEdits?: () => void;
+  beforeUnloadCleanup?: () => void;
+  autoSaveCleanup?: () => void;
+  directoryCleanup?: () => void;
+  flushSnapshot?: () => Promise<void>;
+  snapshotCleanup?: () => void;
   latestFrontMatter: string;
+  mathPluginInstalled?: boolean;
   editorView: EditorView | null;
   isSyncingFromStore: boolean;
   mermaidRenderSeed: number;

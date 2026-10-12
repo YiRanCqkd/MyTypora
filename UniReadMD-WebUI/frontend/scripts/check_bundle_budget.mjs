@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const distAssetsDir = path.resolve('dist', 'assets');
 const maxKb = Number(process.env.FRONTEND_BUNDLE_BUDGET_KB || 1400);
+const maxTotalKb = Number(process.env.FRONTEND_TOTAL_JS_BUDGET_KB || 12000);
 
 function toKb(bytes) {
   return bytes / 1024;
@@ -36,13 +37,16 @@ function main() {
 
   const mainEntry = assets.find((asset) => asset.name.startsWith('index-')) || assets[0];
   const mainKb = toKb(mainEntry.sizeBytes);
+  const totalKb = toKb(assets.reduce((sum, asset) => sum + asset.sizeBytes, 0));
 
   console.log(`[bundle-check] main chunk: ${mainEntry.name} (${mainKb.toFixed(2)} KB)`);
   console.log(`[bundle-check] budget: ${maxKb.toFixed(2)} KB`);
+  console.log(`[bundle-check] 全部 JS: ${totalKb.toFixed(2)} KB / ${maxTotalKb} KB`);
 
   if (mainKb > maxKb) {
     throw new Error(`主包体积超限：${mainKb.toFixed(2)} KB > ${maxKb.toFixed(2)} KB`);
   }
+  if (totalKb > maxTotalKb) throw new Error('全部 JS 产物超过包体预算');
 
   console.log('[bundle-check] pass');
 }

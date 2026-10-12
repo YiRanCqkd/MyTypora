@@ -10,6 +10,8 @@ import type { useCursorPosition } from './cursor-position';
 import type { createMarkdownRenderer } from '../markdown/renderer';
 import type { createWorkbenchRuntime } from './workbench-runtime';
 import type { useWorkbenchStore } from './editor-store';
+import { sanitizeMarkdownHtml } from '../markdown/safe-html';
+import { createPlainRenderCache } from '../markdown/plain-render-cache';
 type UsePreviewEditingStateDependencies =
   ReturnType<typeof useCursorPosition> &
   ReturnType<typeof createMarkdownRenderer> &
@@ -57,12 +59,30 @@ export function usePreviewEditingState(input: UsePreviewEditingStateDependencies
   const fontSizeCompartment = new Compartment();
 
   const mathPluginRevision = ref(0);
+  const renderPlain = createPlainRenderCache(markdown);
+  const previewVisualEditing = ref(false);
+  const previewRenderRevision = ref(0);
+  let cachedHtml = '';
 
   const renderedHtml = computed(() => {
+    const revision = previewRenderRevision.value;
+    if (previewVisualEditing.value && cachedHtml) return cachedHtml;
+    void mathPluginRevision.value;
     void runtime.latestFrontMatter;
     const normalizedContent = store.content.replace(/^\uFEFF/, '');
     const normalized = normalizedContent.replace(/^\[toc\]$/gim, '[[toc]]');
-    return markdown.render(normalized);
+    if (!normalized.trim()) {
+      const endLine = normalized.split('\n').length;
+      cachedHtml = '<p class="preview-empty-line" data-source-start="1" '
+        + `data-source-end="${endLine}" data-source-token="empty_document"><br></p>`
+        + `<!-- preview:${revision} -->`;
+      return cachedHtml;
+    }
+    const plainHtml = renderPlain(normalized);
+    cachedHtml = (plainHtml ?? sanitizeMarkdownHtml(markdown.render(normalized), {
+      resourceBaseUrl: store.resourceBaseUrl,
+    })) + `<!-- preview:${revision} -->`;
+    return cachedHtml;
   });
 
   const headings = computed(() => {
@@ -79,6 +99,6 @@ export function usePreviewEditingState(input: UsePreviewEditingStateDependencies
     previewTableSelection,previewTableCellEditVisible,previewTableCellEditValue,
     previewTableCellEditStyle,previewTableCellEditSelection,previewTableCellEditInput,
     sourceContextMenuVisible,sourceContextMenuStyle,fontSizeCompartment,mathPluginRevision,
-    renderedHtml,headings,activeHeadingLine,
+    renderedHtml,headings,activeHeadingLine,previewVisualEditing,previewRenderRevision,
   };
 }

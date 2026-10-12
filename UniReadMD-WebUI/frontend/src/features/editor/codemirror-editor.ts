@@ -8,6 +8,7 @@ import {
 import { history, indentWithTab, defaultKeymap, historyKeymap } from '@codemirror/commands';
 import { markdown as markdownLanguage } from '@codemirror/lang-markdown';
 import { syntaxHighlighting } from '@codemirror/language';
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import type { useSourceEditing } from './source-editing';
 import type { useEditorSynchronization } from './editor-synchronization';
 import type { useEditorHosts } from './editor-hosts';
@@ -76,60 +77,64 @@ export function useCodeMirrorEditor(input: UseCodeMirrorEditorDependencies) {
       return;
     }
 
-    const state = EditorState.create({
-      doc: store.content,
-      extensions: [
-        history(),
-        markdownLanguage(),
-        syntaxHighlighting(sourceHighlightStyle),
-        highlightActiveLine(),
-        highlightActiveLineGutter(),
-        EditorView.lineWrapping,
-        keymap.of([
-          {
-            key: 'Mod-b',
-            run: (view) => applySourceInlineShortcut('bold', view),
-          },
-          {
-            key: 'Mod-i',
-            run: (view) => applySourceInlineShortcut('italic', view),
-          },
-          {
-            key: 'Mod-k',
-            run: (view) => applySourceInlineShortcut('link', view),
-          },
-          {
-            key: 'Mod-]',
-            run: (view) => applySourceIndentShortcut(false, view),
-          },
-          {
-            key: 'Mod-[',
-            run: (view) => applySourceIndentShortcut(true, view),
-          },
-          {
-            key: 'Shift-Tab',
-            run: (view) => applySourceIndentShortcut(true, view),
-          },
-          indentWithTab,
-          ...defaultKeymap,
-          ...historyKeymap,
-        ]),
-        fontSizeCompartment.of(createFontSizeExtension(getEffectiveEditorFontSize())),
-        EditorView.updateListener.of((update) => {
-          if (update.selectionSet || update.docChanged) {
-            syncCursorLineFromState(update.state);
-            scheduleTypewriterScroll(update.view);
-          }
+    const extensions = [
+      history(),
+      closeBrackets(),
+      markdownLanguage(),
+      syntaxHighlighting(sourceHighlightStyle),
+      highlightActiveLine(),
+      highlightActiveLineGutter(),
+      EditorView.lineWrapping,
+      keymap.of([
+        {
+          key: 'Mod-b',
+          run: (view) => applySourceInlineShortcut('bold', view),
+        },
+        {
+          key: 'Mod-i',
+          run: (view) => applySourceInlineShortcut('italic', view),
+        },
+        {
+          key: 'Mod-k',
+          run: (view) => applySourceInlineShortcut('link', view),
+        },
+        {
+          key: 'Mod-]',
+          run: (view) => applySourceIndentShortcut(false, view),
+        },
+        {
+          key: 'Mod-[',
+          run: (view) => applySourceIndentShortcut(true, view),
+        },
+        {
+          key: 'Shift-Tab',
+          run: (view) => applySourceIndentShortcut(true, view),
+        },
+        indentWithTab,
+        ...closeBracketsKeymap,
+        ...defaultKeymap,
+        ...historyKeymap,
+      ]),
+      fontSizeCompartment.of(createFontSizeExtension(getEffectiveEditorFontSize())),
+      EditorView.updateListener.of((update) => {
+        if (update.selectionSet || update.docChanged) {
+          syncCursorLineFromState(update.state);
+          scheduleTypewriterScroll(update.view);
+        }
 
-          if (!update.docChanged || runtime.isSyncingFromStore) {
-            return;
-          }
+        if (!update.docChanged || runtime.isSyncingFromStore) {
+          return;
+        }
 
-          const nextContent = update.state.doc.toString();
-          store.setContent(nextContent);
-        }),
-      ],
-    });
+        const nextContent = update.state.doc.toString();
+        store.setContent(nextContent);
+      }),
+    ];
+    const state = EditorState.create({ doc: store.content, extensions });
+    runtime.documentRevision = store.documentRevision;
+    runtime.resetDocument = (content) => {
+      runtime.editorView?.setState(EditorState.create({ doc: content, extensions }));
+    };
 
     runtime.editorView = new EditorView({
       state,

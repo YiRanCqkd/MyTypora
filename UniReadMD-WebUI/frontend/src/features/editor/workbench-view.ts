@@ -1,10 +1,33 @@
 import type { WorkbenchDomains } from './workbench-domains';
+import { useParityWorkflows } from '../workspace/parity-workflows';
+import { useWritingEnhancements } from '../settings/writing-enhancements';
+import { computed } from 'vue';
 
 export function createWorkbenchView(domains: WorkbenchDomains) {
   domains.editor.runtime();
+  const writing = useWritingEnhancements(domains);
 
   return {
+    preferencesVisible: domains.settings.foundation().preferencesVisible,
+    writing,
+    parityWorkflows: useParityWorkflows(domains),
     activeHeadingLine: domains.editor.presentation().activeHeadingLine,
+    workspaceQuery: domains.workspace.foundation().workspaceQuery,
+    workspaceMatches: domains.workspace.foundation().workspaceMatches,
+    workspaceDirectory: domains.workspace.foundation().workspaceDirectory,
+    workspaceCaseSensitive: domains.workspace.foundation().workspaceCaseSensitive,
+    workspaceWholeWord: domains.workspace.foundation().workspaceWholeWord,
+    workspaceRegex: domains.workspace.foundation().workspaceRegex,
+    workspaceSearchTruncated: domains.workspace.foundation().workspaceSearchTruncated,
+    searchWorkspace: domains.workspace.actions().searchWorkspace,
+    theme: domains.settings.foundation().theme,
+    autoSave: domains.settings.foundation().autoSave,
+    changeTheme: domains.settings.nativeCommands().changeTheme,
+    changeAutoSave: domains.settings.nativeCommands().changeAutoSave,
+    selectUserCss: domains.settings.nativeCommands().selectUserCss,
+    disableUserCss: domains.settings.nativeCommands().disableUserCss,
+    fileSortMode: domains.workspace.foundation().fileSortMode,
+    fileViewMode: domains.workspace.foundation().fileViewMode,
     activeTab: domains.workspace.foundation().activeTab,
     applyPreviewTableAction: domains.editor.tableFeature().applyPreviewTableAction,
     changeSpellCheckEnabled: domains.settings.actions().changeSpellCheckEnabled,
@@ -12,7 +35,7 @@ export function createWorkbenchView(domains: WorkbenchDomains) {
     closeDocSearchPanel: domains.editor.commands().closeDocSearchPanel,
     closeWindow: domains.settings.nativeCommands().closeWindow,
     contentCharCount: domains.editor.presentation().contentCharCount,
-    contentReadMinutes: domains.editor.presentation().contentReadMinutes,
+    contentReadMinutes: computed(() => writing.readMinutes),
     contentZoomLabel: domains.settings.foundation().contentZoomLabel,
     docReplaceQuery: domains.editor.foundation.docReplaceQuery,
     docSearchCaseSensitive: domains.editor.foundation.docSearchCaseSensitive,
@@ -20,6 +43,7 @@ export function createWorkbenchView(domains: WorkbenchDomains) {
     docSearchQuery: domains.editor.foundation.docSearchQuery,
     docSearchSummary: domains.editor.presentation().docSearchSummary,
     docSearchWholeWord: domains.editor.foundation.docSearchWholeWord,
+    docSearchRegex: domains.editor.foundation.docSearchRegex,
     editorHost: domains.editor.foundation.editorHost,
     editorPreviewHost: domains.editor.foundation.editorPreviewHost,
     errorMessage: domains.editor.foundation.errorMessage,
@@ -39,7 +63,7 @@ export function createWorkbenchView(domains: WorkbenchDomains) {
       domains.editor.events().handlePreviewInlineEditCompositionStart,
     handlePreviewInlineEditInput: domains.editor.events().handlePreviewInlineEditInput,
     handlePreviewInlineEditKeydown: domains.editor.events().handlePreviewInlineEditKeydown,
-    handlePreviewInlineEditorWheel: domains.editor.source().handlePreviewInlineEditorWheel,
+    revealPreviewInlineEditorCaret: domains.editor.navigation().revealPreviewInlineEditorCaret,
     handlePreviewScroll: domains.editor.source().handlePreviewScroll,
     handlePreviewTableCellEditBlur: domains.editor.tableFeature().handlePreviewTableCellEditBlur,
     handlePreviewTableCellEditKeydown:
@@ -57,6 +81,8 @@ export function createWorkbenchView(domains: WorkbenchDomains) {
     layoutStyle: domains.settings.session().layoutStyle,
     minimizeWindow: domains.settings.nativeCommands().minimizeWindow,
     openFileFromList: domains.workspace.actions().openFileFromList,
+    newFile: domains.workspace.actions().newFile,
+    openFolder: domains.workspace.actions().openFolder,
     outlineDisplayItems: domains.workspace.presentation().outlineDisplayItems,
     pinOutline: domains.settings.foundation().pinOutline,
     previewHost: domains.editor.foundation.previewHost,
@@ -93,7 +119,7 @@ export function createWorkbenchView(domains: WorkbenchDomains) {
     startMainPreviewResize: domains.workspace.actions().startMainPreviewResize,
     startSidebarResize: domains.workspace.actions().startSidebarResize,
     statusLineLabel: domains.editor.presentation().statusLineLabel,
-    statusWordLabel: domains.editor.presentation().statusWordLabel,
+    statusWordLabel: computed(() => writing.wordLabel),
     store: domains.editor.foundation.store,
     toggleMaximizeWindow: domains.settings.nativeCommands().toggleMaximizeWindow,
     togglePinOutline: domains.settings.actions().togglePinOutline,

@@ -25,6 +25,8 @@ function createWindowService(options) {
     settings,
     shell,
     spell,
+    sessions,
+    assets,
   } = options;
 
   function resolveIconPath() {
@@ -48,6 +50,7 @@ function createWindowService(options) {
       isDev,
     });
     const win = new BrowserWindow({
+      show: process.env.UNIREADMD_TEST_MODE !== '1',
       width: 1320,
       height: 880,
       minWidth: 980,
@@ -57,21 +60,26 @@ function createWindowService(options) {
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: false,
-        webSecurity: false,
+        sandbox: true,
+        webSecurity: true,
         preload: preloadPath,
       },
     });
+    // closed 触发时窗口已销毁，清理必须使用创建时保存的标识。
+    const ownerId = win.webContents.id;
     const session = win.webContents.session;
+    session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+    session.setPermissionCheckHandler(() => false);
+    sessions?.register(win, Boolean(initialFilePath));
     if (initialFilePath) launch.enqueue(win, initialFilePath);
     win.webContents.setWindowOpenHandler(({ url }) => {
       if (isExternalNavigationUrl(url)) void shell.openExternal(url);
       return { action: 'deny' };
     });
     win.webContents.on('will-navigate', (event, url) => {
-      if (!isExternalNavigationUrl(url)) return;
+      if (url === getRendererUrl()) return;
       event.preventDefault();
-      void shell.openExternal(url);
+      if (isExternalNavigationUrl(url)) void shell.openExternal(url);
     });
     win.webContents.on('did-finish-load', () => {
       const traceId = runtime.createTraceId('boot');
@@ -83,6 +91,7 @@ function createWindowService(options) {
       }, 800);
     });
     win.webContents.on('did-fail-load', (_event, code, description, url, isMainFrame) => {
+      if (isMainFrame && code !== -3) win.unireadmdAllowClose = true;
       runtime.log('error', 'renderer did-fail-load', runtime.createTraceId('boot'), {
         code,
         description,
@@ -91,6 +100,7 @@ function createWindowService(options) {
       });
     });
     win.webContents.on('preload-error', (_event, value, error) => {
+      win.unireadmdAllowClose = true;
       runtime.log('error', 'renderer preload-error', runtime.createTraceId('boot'), {
         preloadPath: value,
         error: safeErrorMessage(error),
@@ -105,7 +115,22 @@ function createWindowService(options) {
         sourceId,
       });
     });
-    win.on('closed', () => launch.removeWindow(win));
+    win.on('close', (event) => {
+      if (win.unireadmdAllowClose || win.webContents.isDestroyed()) return;
+      event.preventDefault();
+      win.webContents.send('menu:command', 'window-close');
+    });
+    win.webContents.on('render-process-gone', () => { win.unireadmdAllowClose = true; });
+    win.on('closed', () => {
+      assets?.revoke(ownerId);
+      void sessions?.release(ownerId).catch((error) => runtime.log(
+        'error',
+        'session release failed',
+        runtime.createTraceId('session'),
+        { error: safeErrorMessage(error) },
+      ));
+      launch.removeWindow(ownerId);
+    });
     win.loadURL(getRendererUrl());
     void settings.readSettings()
       .then((current) => spell.applyInitial(session, current, runtime.createTraceId('spell')))

@@ -13,7 +13,8 @@ if (process.platform === 'win32' && process.env.SystemRoot) {
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  timeout: 30_000,
+  // Windows 页面进程初始化较慢；断言超时独立保持 10 秒。
+  timeout: 60_000,
   expect: {
     timeout: 10_000,
   },
@@ -22,10 +23,11 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'node ./node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173 --strictPort',
+    command: 'node ./node_modules/vite/bin/vite.js build && '
+      + 'node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
-    timeout: 120_000,
+    timeout: 180_000,
   },
   projects: [
     {

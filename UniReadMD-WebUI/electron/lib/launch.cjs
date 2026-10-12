@@ -112,9 +112,10 @@ function createLaunchService(options) {
     getPending: () => [...pending],
     getPrimaryWindow,
     handle,
-    removeWindow: (win) => {
-      queues.delete(win.webContents.id);
-      authorization.revoke(win);
+    removeWindow: (windowOrId) => {
+      const ownerId = typeof windowOrId === 'number' ? windowOrId : windowOrId.webContents.id;
+      queues.delete(ownerId);
+      authorization.revoke(ownerId);
     },
     resolve,
   };

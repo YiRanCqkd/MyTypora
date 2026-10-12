@@ -1,5 +1,6 @@
 import { hasMathSyntax } from '../../utils/markdown';
 import { watch, nextTick } from 'vue';
+import { observePreviewLayout, preservePreviewScroll } from './preview-editor-layout';
 import type {
   EditorDomain,
   MarkdownDomain,
@@ -28,10 +29,12 @@ export type ViewportLifecycleFeatures = Readonly<{
 
 export function useViewportLifecycle(input: ViewportLifecycleFeatures) {
   const { applyPreviewSearchHighlights,fontSizeCompartment,previewInlineEditComposing,
+    previewInlineEditVisible,
     renderedHtml } = input.editor.presentation;
   const {
     applyStoreContentToEditor,createFontSizeExtension,refreshPreviewHeadingNodes,
     refreshPreviewSourceNodes,schedulePreviewScrollSync,scrollEditorToLine,scrollPreviewToLine,
+    revealPreviewInlineEditorCaret,
   } = input.editor.navigation;
   const { closePreviewInlineEditor,closePreviewTableMenu,closeSourceContextMenu,
     refreshPreviewInlineEditorPosition } = input.editor.preview;
@@ -40,7 +43,8 @@ export function useViewportLifecycle(input: ViewportLifecycleFeatures) {
     contentZoom,fontSize,pinOutline,sourceMode,typewriterMode,
   } = input.settings.foundation;
   const { currentCursorLine,docSearchCaseSensitive,docSearchMatchIndex,docSearchQuery,
-    docSearchWholeWord,runtime,showDocSearchPanel,store } = input.editor.foundation;
+    docSearchWholeWord,editorPreviewHost,previewHost,runtime,showDocSearchPanel,store,
+  } = input.editor.foundation;
   const {
     ensureMainPreviewWidth,getEffectiveEditorFontSize,
   } = input.workspace.presentation;
@@ -50,17 +54,31 @@ export function useViewportLifecycle(input: ViewportLifecycleFeatures) {
   const { scheduleTypewriterScroll } = input.editor.codeMirror;
   const { sidebarWidth } = input.workspace.foundation;
 
+  // 容器可能因侧栏、工具栏或宿主布局改变，不能只依赖窗口 resize 事件。
+  watch(() => editorPreviewHost.value, (container, _previous, onCleanup) => {
+    if (!container) return;
+    onCleanup(observePreviewLayout(container, () => {
+      ensureMainPreviewWidth();
+      refreshPreviewTableCellEditorPosition();
+      refreshPreviewInlineEditorPosition();
+      if (document.activeElement?.matches('.preview-inline-editor-input')) {
+        revealPreviewInlineEditorCaret();
+      }
+    }));
+  }, { immediate: true, flush: 'post' });
+
   function handleWindowResize() {
     ensureMainPreviewWidth();
     refreshPreviewHeadingNodes();
     refreshPreviewSourceNodes();
     refreshPreviewTableCellEditorPosition();
+    refreshPreviewInlineEditorPosition();
     schedulePreviewScrollSync();
   }
 
   watch(
-    () => store.content,
-    (nextContent) => {
+    () => [store.content, store.documentRevision] as const,
+    ([nextContent]) => {
       if (hasMathSyntax(nextContent)) {
         void ensureMathPluginLoaded();
       }
@@ -101,26 +119,43 @@ export function useViewportLifecycle(input: ViewportLifecycleFeatures) {
 
   watch(
     () => renderedHtml.value,
-    async () => {
+    async (_html, _previous, onCleanup) => {
       closePreviewTableMenu();
       closeSourceContextMenu();
 
-      await nextTick();
-      await renderMermaidBlocks();
-      refreshPreviewHeadingNodes();
-      refreshPreviewSourceNodes();
-      refreshPreviewTableCellEditorPosition();
-      if (!previewInlineEditComposing.value) {
+      // v-html 替换节点会先移除占位，必须在 DOM 更新之前保留滚动范围。
+      const restoreScroll = previewInlineEditVisible.value && previewHost.value
+        ? preservePreviewScroll(previewHost.value) : () => {};
+      let cancelled = false;
+      onCleanup(() => { cancelled = true; restoreScroll(); });
+      try {
+        await nextTick();
+        if (cancelled) return;
         refreshPreviewInlineEditorPosition();
+        restoreScroll();
+        await renderMermaidBlocks();
+        if (cancelled) return;
+        refreshPreviewHeadingNodes();
+        refreshPreviewSourceNodes();
+        refreshPreviewTableCellEditorPosition();
+        if (!previewInlineEditComposing.value) {
+          refreshPreviewInlineEditorPosition();
+          if (document.activeElement?.matches('.preview-inline-editor-input')) {
+            revealPreviewInlineEditorCaret();
+          }
+        }
+        applyPreviewSearchHighlights();
+        schedulePreviewScrollSync();
+      } finally {
+        restoreScroll();
       }
-      applyPreviewSearchHighlights();
-      schedulePreviewScrollSync();
     },
   );
 
   watch(
     () => [
       showDocSearchPanel.value,
+      sourceMode.value,
       docSearchQuery.value,
       docSearchCaseSensitive.value,
       docSearchWholeWord.value,
@@ -172,12 +207,9 @@ export function useViewportLifecycle(input: ViewportLifecycleFeatures) {
   watch(
     () => [sidebarWidth.value, pinOutline.value],
     () => {
-      if (!sourceMode.value) {
-        return;
-      }
-
       nextTick(() => {
-        ensureMainPreviewWidth();
+        if (sourceMode.value) ensureMainPreviewWidth();
+        else refreshPreviewInlineEditorPosition();
       });
     },
   );

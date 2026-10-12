@@ -2,10 +2,14 @@ import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 
 const coverageFloor = 90;
-const criticalCoverageFiles = (process.env.VITEST_CRITICAL_COVERAGE_FILES || '')
-  .split(';')
-  .map((file) => file.trim())
-  .filter(Boolean);
+const criticalCoverageFiles = [
+  'src/features/markdown/safe-html.ts',
+  'src/features/workspace/document-integrity.ts',
+  ...(process.env.VITEST_CRITICAL_COVERAGE_FILES || '')
+    .split(';')
+    .map((file) => file.trim())
+    .filter(Boolean),
+];
 
 const perFileThresholds = Object.fromEntries(
   criticalCoverageFiles.map((file) => [
@@ -24,6 +28,8 @@ export default defineConfig({
     vue(),
   ],
   test: {
+    // 限制并发，避免 Windows 上多个工作台和覆盖率实例争抢内存。
+    maxWorkers: 2,
     environment: 'jsdom',
     globals: true,
     include: [
@@ -37,6 +43,8 @@ export default defineConfig({
       include: [
         'src/services/**/*.ts',
         'src/utils/**/*.ts',
+        'src/features/markdown/safe-html.ts',
+        'src/features/workspace/document-integrity.ts',
       ],
       exclude: [
         'src/**/*.spec.ts',

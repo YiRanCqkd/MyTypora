@@ -1,8 +1,11 @@
 {
   "appId": "com.unireadmd.phase2",
   "productName": "UniReadMD",
+  "buildVersion": "1.1.0.0",
   "asar": true,
-  "electronDist": "node_modules/electron/dist",
+  "asarUnpack": [
+    "electron/lib/search-lines.cjs"
+  ],
   "compression": "maximum",
   "electronLanguages": [
     "zh-CN",
@@ -10,6 +13,7 @@
   ],
   "forceCodeSigning": false,
   "npmRebuild": false,
+  "electronDist": "node_modules/electron/dist",
   "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
   "directories": {
     "output": "release/electron",

@@ -28,9 +28,41 @@
   --code-block-bg: #f8f8f8;
   --code-block-border: #e7eaed;
   --content-zoom: 1;
-  --content-max-width: 1100px;
-  --content-focus-max-width: 1100px;
+  --content-max-width: 100%;
+  --content-focus-max-width: 100%;
   --content-side-padding: 48px;
+}
+
+.preferences-panel {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.workspace-search { display: flex; gap: 4px; padding: 8px; }
+.workspace-search input { min-width: 0; width: 100%; }
+.workspace-search-results button {
+  display: block;
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.preferences-panel label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.layout.typora-sourceview-on .status-right {
+  display: inline-flex;
 }
 
 html[data-theme='dark'] {
@@ -125,7 +157,7 @@ body,
   transition: margin-left 0.2s ease, width 0.2s ease;
 }
 
-.layout.pin-outline:not(.typora-sourceview-on) .top-titlebar {
+.layout.pin-outline .top-titlebar {
   margin-left: var(--sidebar-current-width);
   width: calc(100% - var(--sidebar-current-width));
 }
@@ -270,6 +302,7 @@ body,
 }
 
 .sidebar {
+  min-width: 0;
   min-height: 0;
   background: var(--sidebar);
   border-right: 1px solid var(--line);
@@ -281,6 +314,12 @@ body,
 
 .layout.hide-sidebar .sidebar {
   border-right-color: transparent;
+  visibility: hidden;
+}
+
+.preview img {
+  max-width: 100%;
+  height: auto;
 }
 
 .sidebar-resizer {
@@ -375,8 +414,51 @@ body,
 
 .panel-files {
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: 0;
+}
+
+.workspace-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.workspace-actions button {
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.workspace-actions button:hover {
+  background: var(--item-hover-bg);
+  color: var(--text);
+}
+
+.workspace-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.panel-files > .workspace-search,
+.workspace-search-results {
+  flex: 0 0 auto;
+}
+
+.workspace-search-results {
+  max-height: 160px;
+  overflow: auto;
 }
 
 .panel-meta,
@@ -411,8 +493,8 @@ body,
   grid-template-rows: 1fr;
   gap: 0;
   min-height: 0;
+  flex: 1 1 0;
   width: 100%;
-  height: 100%;
 }
 
 .files-toolbar {
@@ -596,6 +678,13 @@ body,
   background: transparent;
 }
 
+html[data-theme='dark'] .outline-item,
+html[data-theme='dark'] .search-item { color: var(--muted); }
+html[data-theme='dark'] .outline-item:hover,
+html[data-theme='dark'] .search-item:hover,
+html[data-theme='dark'] .outline-item.active,
+html[data-theme='dark'] .search-item.active { color: var(--text); }
+
 .outline-item-text {
   display: block;
   width: 100%;
@@ -659,8 +748,8 @@ body,
   min-width: 0;
   min-height: 0;
   height: 100%;
-  display: grid;
-  grid-template-rows: auto auto 1fr;
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
   overflow: hidden;
   position: relative;
@@ -669,40 +758,41 @@ body,
 }
 
 #app > .layout > .layout-body > .main {
-  display: grid !important;
+  display: flex !important;
   min-height: 0 !important;
   height: 100% !important;
-  grid-template-rows: auto auto 1fr !important;
+  flex-direction: column;
 }
 
 .doc-search-panel {
-  position: absolute;
+  position: static;
+  flex-shrink: 0;
   left: 0;
   right: 0;
   top: 0;
   z-index: 12;
   border-bottom: 0;
   background: var(--panel);
-  padding: 5px 8px 0 16px;
+  padding: 5px 8px 4px 16px;
   display: grid;
   gap: 2px;
-  max-height: 39px;
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
   font-size: 12px;
   box-shadow: rgba(0, 0, 0, 0.6) 0 0 0.5em;
   transform: translate3d(0, 0, 0);
 }
 
 .layout.on-search-panel-open .main {
-  padding-top: 20px;
+  padding-top: 0;
 }
 
 .layout.on-search-panel-open.on-replace-panel-open .main {
-  padding-top: 50px;
+  padding-top: 0;
 }
 
 .layout.on-replace-panel-open .doc-search-panel {
-  max-height: 74px;
+  max-height: none;
 }
 
 .doc-search-row {
@@ -796,7 +886,8 @@ body,
 .editor-preview {
   position: relative;
   min-height: 0;
-  height: 100%;
+  height: auto;
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
@@ -830,7 +921,7 @@ body,
 .preview-inline-editor {
   position: absolute;
   z-index: 32;
-  background: transparent;
+  background: var(--panel);
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -838,9 +929,32 @@ body,
   display: block;
 }
 
+.preview .preview-editing-fragment {
+  visibility: hidden;
+  display: inline-block;
+  vertical-align: top;
+  width: var(--preview-edit-width, auto);
+  min-height: var(--preview-edit-height, 1em);
+}
+
+.preview .preview-editing-block {
+  visibility: hidden;
+  min-height: var(--preview-edit-height, 0);
+}
+
+.preview:has(.preview-editing-block, .preview-editing-fragment) { overflow-anchor: none; }
+.preview .preview-empty-line { min-height: 1.75em; cursor: text; }
+.preview .preview-empty-line::before {
+  content: '点击此处开始写作…';
+  color: var(--muted);
+  position: absolute;
+  pointer-events: none;
+}
+
 .preview-inline-editor-input {
+  display: block;
   width: 100%;
-  min-height: 100%;
+  min-height: 1em;
   resize: none;
   border: 0;
   border-radius: 0;
@@ -948,7 +1062,7 @@ body,
 
 #app > .layout > .layout-body > .main > .editor-preview {
   min-height: 0 !important;
-  height: 100% !important;
+  height: auto !important;
   overflow: hidden !important;
 }
 
@@ -1014,20 +1128,8 @@ body,
   max-width: var(--content-max-width);
   width: 100%;
   margin: 0 auto;
-  font-size: calc(15px * var(--content-zoom));
-  line-height: 1.6;
-}
-
-@media only screen and (min-width: 1400px) {
-  .preview {
-    max-width: 1200px;
-  }
-}
-
-@media only screen and (min-width: 1800px) {
-  .preview {
-    max-width: 1320px;
-  }
+  font-size: calc(16px * var(--content-zoom));
+  line-height: 1.75;
 }
 
 .preview p,
@@ -1330,7 +1432,7 @@ html[data-theme='dark'] .preview sup.footnote-ref {
   transition: margin-left 0.2s ease, width 0.2s ease;
 }
 
-.layout.pin-outline:not(.typora-sourceview-on) .status-bar {
+.layout.pin-outline .status-bar {
   margin-left: var(--sidebar-current-width);
   width: calc(100% - var(--sidebar-current-width));
 }
@@ -1363,6 +1465,15 @@ html[data-theme='dark'] .preview sup.footnote-ref {
   opacity: 1;
   background: #ededed;
   color: var(--text);
+}
+
+html[data-theme='dark'] .status-action:hover,
+html[data-theme='dark'] .status-action.active {
+  background: var(--item-hover-bg);
+}
+
+html[data-theme='dark'] .status-bar {
+  border-top-color: var(--line);
 }
 
 .status-word {
@@ -1455,8 +1566,31 @@ html[data-theme='dark'] .preview sup.footnote-ref {
   border-left: 0;
 }
 
-.layout.typora-sourceview-on #outline-btn {
-  display: none;
+.source-mode-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.source-mode-radio {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.source-mode-radio:checked {
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--panel);
+}
+
+.source-mode-radio:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .layout.on-focus-mode .preview {
@@ -1692,4 +1826,13 @@ html[data-theme='dark'] .layout.typora-sourceview-on #typora-source .cm-activeLi
   .sidebar-resizer {
     display: none;
   }
+}
+
+/* 活动块沿用正文排版；pre-wrap 会把 <br> 后的 HTML 换行重复显示。 */
+.preview .preview-visual-editing {
+  outline: none;
+  caret-color: var(--accent);
+}
+.preview .preview-visual-editing:focus-visible {
+  box-shadow: -2px 0 0 var(--accent);
 }

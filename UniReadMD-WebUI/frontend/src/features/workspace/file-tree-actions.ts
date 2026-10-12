@@ -20,12 +20,14 @@ type UseFileTreeActionsDependencies =
   ReturnType<typeof useTaskRunner> &
   ReturnType<typeof createWorkbenchRuntime> &
   ReturnType<typeof useWorkbenchStore>;
+import type { useDocumentIntegrity } from './document-integrity';
 
-export function useFileTreeActions(input: UseFileTreeActionsDependencies) {
+export function useFileTreeActions(input: UseFileTreeActionsDependencies
+  & ReturnType<typeof useDocumentIntegrity>) {
   const { activeTab,ensureMainPreviewWidth,fileTreeExpanded,isDocumentLoading,
     isResizingMainPreview,isResizingSidebar,mainPreviewWidth,normalizeMainPreviewWidth,
     normalizeSidebarWidth,pinOutline,pushRecentFile,resolveMainPreviewContainerWidth,runTask,
-    runtime,sidebarWidth,sourceMode,store,
+    runtime,sidebarWidth,sourceMode,store,ensureCanReplaceDocument,
   } = input;
 
   function startSidebarResize(event: MouseEvent) {
@@ -112,10 +114,12 @@ export function useFileTreeActions(input: UseFileTreeActionsDependencies) {
       fallbackHint?: string;
     },
   ): Promise<T | null> {
+    if (isDocumentLoading.value) return null;
     isDocumentLoading.value = true;
     await nextTick();
 
     try {
+      if (!await ensureCanReplaceDocument()) return null;
       return await runTask(taskName, executor, options);
     } finally {
       isDocumentLoading.value = false;
@@ -131,7 +135,7 @@ export function useFileTreeActions(input: UseFileTreeActionsDependencies) {
       return;
     }
 
-    store.setFile(result.filePath, result.content);
+    store.setFile(result.filePath, result.content, result);
     pushRecentFile(result.filePath);
     activeTab.value = 'outline';
   }

@@ -1,12 +1,13 @@
 import { EditorView } from '@codemirror/view';
 import type { useEditorHosts } from './editor-hosts';
 import type { createWorkbenchRuntime } from './workbench-runtime';
+import type { useWorkbenchStore } from './editor-store';
 type UseEditorSynchronizationDependencies =
   ReturnType<typeof useEditorHosts> &
-  ReturnType<typeof createWorkbenchRuntime>;
+  ReturnType<typeof createWorkbenchRuntime> & ReturnType<typeof useWorkbenchStore>;
 
 export function useEditorSynchronization(input: UseEditorSynchronizationDependencies) {
-  const { previewHost,runtime,
+  const { previewHost,runtime,store,
   } = input;
 
   function createFontSizeExtension(size: number) {
@@ -19,6 +20,12 @@ export function useEditorSynchronization(input: UseEditorSynchronizationDependen
 
   function applyStoreContentToEditor(nextContent: string) {
     if (!runtime.editorView) {
+      return;
+    }
+
+    if (runtime.documentRevision !== store.documentRevision) {
+      runtime.documentRevision = store.documentRevision;
+      runtime.resetDocument?.(nextContent);
       return;
     }
 

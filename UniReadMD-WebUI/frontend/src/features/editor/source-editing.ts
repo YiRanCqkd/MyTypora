@@ -25,24 +25,14 @@ type UseSourceEditingDependencies =
   ReturnType<typeof createPreviewEditingRanges>;
 
 export function useSourceEditing(input: UseSourceEditingDependencies) {
-  const { closePreviewInlineEditor,closePreviewTableCellEditor,closePreviewTableMenu,
-    commitPreviewTableCellEditValue,docReplaceQuery,docSearchInput,docSearchQuery,previewHost,
+  const { closePreviewTableCellEditor,closePreviewTableMenu,
+    commitPreviewTableCellEditValue,docReplaceQuery,docSearchInput,docSearchQuery,
     previewInlineEditVisible,previewTableCellEditVisible,runtime,schedulePreviewScrollSync,
     showDocReplacePanel,showDocSearchPanel,
+    refreshPreviewInlineEditorPosition,
   } = input;
 
-  function handlePreviewInlineEditorWheel(event: WheelEvent) {
-    const preview = previewHost.value;
-    if (!preview) {
-      return;
-    }
-
-    event.preventDefault();
-    preview.scrollTop += event.deltaY;
-  }
-
   function handlePreviewScroll() {
-    schedulePreviewScrollSync();
     closePreviewTableMenu();
     if (previewTableCellEditVisible.value) {
       commitPreviewTableCellEditValue();
@@ -50,10 +40,11 @@ export function useSourceEditing(input: UseSourceEditingDependencies) {
     }
 
     if (!previewInlineEditVisible.value) {
+      schedulePreviewScrollSync();
       return;
     }
-
-    closePreviewInlineEditor();
+    // 编辑层随滚动重新定位，打字机模式和手动滚动不能结束当前编辑会话。
+    refreshPreviewInlineEditorPosition();
   }
 
   function selectAllSourceContent() {
@@ -145,7 +136,7 @@ export function useSourceEditing(input: UseSourceEditingDependencies) {
     });
   }
 
-  return { handlePreviewInlineEditorWheel,handlePreviewScroll,selectAllSourceContent,
+  return { handlePreviewScroll,selectAllSourceContent,
     runLegacyEditCommand,applySourceInlineShortcut,applySourceIndentShortcut,openDocSearchPanel,
   };
 }

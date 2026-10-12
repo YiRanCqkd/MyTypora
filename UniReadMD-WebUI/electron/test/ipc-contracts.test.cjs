@@ -11,16 +11,37 @@ const expectedChannels = [
   'app:logEvent',
   'context:showFileTreeMenu',
   'context:showSourceEditorMenu',
+  'document:confirmDiscard',
+  'export:chooseResource',
   'export:document',
   'export:getCapabilities',
   'export:html',
+  'export:importDocument',
+  'file:chooseMoveDirectory',
+  'file:inspect',
   'file:listMarkdownInDirectory',
+  'file:openDirectory',
+  'file:openDroppedFile',
   'file:openFromPath',
+  'file:openLinkedFile',
   'file:openMarkdown',
+  'file:operate',
   'file:saveMarkdown',
+  'file:searchDirectory',
+  'image:applyRoot',
+  'image:collect',
+  'image:drop',
+  'image:paste',
+  'image:select',
+  'image:setRoot',
+  'session:listDrafts',
+  'session:load',
+  'session:restoreDraft',
+  'session:save',
   'settings:get',
   'settings:getAll',
   'settings:getRecentFiles',
+  'settings:getUserCss',
   'settings:selectUserCssFile',
   'settings:set',
   'settings:setRecentFiles',
@@ -58,23 +79,36 @@ function createController() {
       showSourceEditorMenu: passthrough,
     },
     exporters: {
+      chooseResource: passthrough,
+      importDocument: passthrough,
       exportDocument: passthrough,
       exportHtml: passthrough,
       getCapabilities: passthrough,
     },
     files: {
+      openDirectory: passthrough,
+      searchDirectory: passthrough,
       listMarkdownInDirectory: passthrough,
       openFromPath: passthrough,
       openMarkdown: passthrough,
       saveMarkdown: passthrough,
     },
     ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) },
+    workspaceTools: {
+      openDroppedFile: passthrough, openLinkedFile: passthrough, operate: passthrough,
+      inspect: passthrough, chooseMoveDirectory: passthrough,
+    },
+    images: {
+      select: passthrough, paste: passthrough, drop: passthrough,
+      setRoot: passthrough, applyRoot: passthrough, collect: passthrough,
+    },
     launch: { consumeForWindow: () => 'D:\\docs\\launch.md' },
     runtime: {
       log: () => {},
       normalizeTraceId: (traceId) => traceId || 'trace-default',
     },
     settings: {
+      getUserCss: passthrough,
       get: passthrough,
       getAll: passthrough,
       getRecentFiles: passthrough,
@@ -86,6 +120,13 @@ function createController() {
       getState: passthrough,
       setEnabled: passthrough,
       setLanguage: passthrough,
+    },
+    sessions: {
+      listDrafts: passthrough,
+      restoreDraft: passthrough,
+      load: passthrough,
+      save: passthrough,
+      confirmDiscard: passthrough,
     },
   });
   controller.registerAll();
@@ -115,6 +156,10 @@ test('IPC 装配保留 payload、traceId 和返回结构', async () => {
     { key: 'theme', value: 'dark', traceId: 'trace-settings' },
   );
   assert.deepEqual(await handlers.get('app:getVersion')(event, {}), { version: '1.0.0' });
+  const imagePayload = {
+    sourceFilePath: 'D:\\docs\\source.md', content: '![图](图.png)', traceId: 'trace-images',
+  };
+  assert.deepEqual(await handlers.get('image:collect')(event, imagePayload), imagePayload);
   assert.deepEqual(await handlers.get('app:consumeLaunchFilePath')(event, {}), {
     filePath: 'D:\\docs\\launch.md',
   });

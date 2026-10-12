@@ -27,11 +27,22 @@ export function useWorkspaceState(input: UseWorkspaceStateDependencies) {
   const fileTreeExpanded = ref<Record<string, boolean>>({});
 
   const currentDirectoryPath = ref('');
+  const workspaceDirectory = ref('');
+  const workspaceQuery = ref('');
+  const workspaceCaseSensitive = ref(false);
+  const workspaceWholeWord = ref(false);
+  const workspaceRegex = ref(false);
+  const workspaceSearchTruncated = ref(false);
+  const workspaceMatches = ref<Array<{ filePath: string; line: number; text: string }>>([]);
+  const fileModifiedTimes = ref<Record<string, number>>({});
+  const workspaceDirectories = ref<string[]>([]);
 
   const currentDirectoryMarkdownFiles = ref<string[]>([]);
 
   return { sidebarWidth,isResizingSidebar,mainPreviewWidth,isResizingMainPreview,
     fileViewMode,fileSortMode,filesFilter,searchText,fileTreeExpanded,currentDirectoryPath,
     currentDirectoryMarkdownFiles,
+    workspaceDirectory,workspaceQuery,workspaceMatches,fileModifiedTimes,workspaceDirectories,
+    workspaceCaseSensitive,workspaceWholeWord,workspaceRegex,workspaceSearchTruncated,
   };
 }

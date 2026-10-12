@@ -1,7 +1,17 @@
 import type { Theme } from './preferences-contracts';
+import { onBeforeUnmount } from 'vue';
 export function useAppearance() {
+  let requestedTheme: Theme = 'light';
+  const media = window.matchMedia?.('(prefers-color-scheme: dark)');
+  const updateTheme = () => {
+    document.documentElement.dataset.theme = requestedTheme === 'system'
+      ? media?.matches ? 'dark' : 'light' : requestedTheme;
+  };
+  media?.addEventListener('change', updateTheme);
+  onBeforeUnmount(() => media?.removeEventListener('change', updateTheme));
   function applyTheme(mode: Theme) {
-    document.documentElement.dataset.theme = mode;
+    requestedTheme = mode;
+    updateTheme();
   }
 
   function getUserCssLinkElement() {
@@ -20,10 +30,15 @@ export function useAppearance() {
     return link;
   }
 
-  function applyUserCss() {
-    const link = getUserCssLinkElement();
-    // 第二阶段已移除用户 CSS 功能，为避免遗留配置污染渲染样式，强制禁用外部 CSS 注入。
-    link.href = '';
+  function applyUserCss(css = '') {
+    getUserCssLinkElement().remove();
+    let style = document.getElementById('unireadmd-user-style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'unireadmd-user-style';
+      document.head.appendChild(style);
+    }
+    style.textContent = css;
   }
 
   return { applyTheme,getUserCssLinkElement,applyUserCss,

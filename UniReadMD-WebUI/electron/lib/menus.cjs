@@ -4,6 +4,9 @@ function buildApplicationMenuTemplate(options = {}) {
     onAbout = () => {},
     onSetDefaultReader = () => {},
     sendCommand = () => {},
+    pandocFormats = ['docx', 'odt', 'rtf'],
+    documentToolsVisible = false,
+    preferencesVisible = false,
   } = options;
   const template = isMac ? [{ role: 'appMenu' }] : [];
 
@@ -11,6 +14,8 @@ function buildApplicationMenuTemplate(options = {}) {
     label: '文件',
     submenu: [
       { label: '打开...', accelerator: 'CmdOrCtrl+O', click: () => sendCommand('file-open') },
+      { label: '新建', accelerator: 'CmdOrCtrl+N', click: () => sendCommand('file-new') },
+      { label: '打开文件夹...', click: () => sendCommand('file-open-folder') },
       { label: '保存', accelerator: 'CmdOrCtrl+S', click: () => sendCommand('file-save') },
       {
         label: '另存为...',
@@ -30,7 +35,12 @@ function buildApplicationMenuTemplate(options = {}) {
           { label: '导出 PNG...', click: () => sendCommand('file-export-png') },
           { label: '导出 JPEG...', click: () => sendCommand('file-export-jpeg') },
           { type: 'separator' },
-          { label: '导出 Word (docx)...', click: () => sendCommand('file-export-docx') },
+          { label: '导出 Word (docx)...', enabled: pandocFormats.includes('docx'),
+            click: () => sendCommand('file-export-docx') },
+          { label: '导出 OpenDocument (odt)...', enabled: pandocFormats.includes('odt'),
+            click: () => sendCommand('file-export-odt') },
+          { label: '导出 RTF...', enabled: pandocFormats.includes('rtf'),
+            click: () => sendCommand('file-export-rtf') },
         ],
       },
       { type: 'separator' },
@@ -64,6 +74,13 @@ function buildApplicationMenuTemplate(options = {}) {
   template.push({
     label: '视图',
     submenu: [
+      { id: 'view-document-tools', label: '显示快捷操作栏', type: 'checkbox',
+        checked: documentToolsVisible,
+        click: () => sendCommand('view-toggle-document-tools') },
+      { id: 'view-preferences', label: '显示偏好设置', type: 'checkbox',
+        checked: preferencesVisible,
+        click: () => sendCommand('view-toggle-preferences') },
+      { type: 'separator' },
       {
         label: '主题',
         submenu: [

@@ -1,4 +1,7 @@
 import MarkdownIt from 'markdown-it';
+import { rememberDocumentWords } from './document-text';
+import { highlightCode, headingSlug } from './code-highlight';
+import { sanitizeMarkdownHtml } from './safe-html';
 import 'katex/dist/katex.min.css';
 import * as markdownItEmoji from 'markdown-it-emoji';
 import markdownItFootnote from 'markdown-it-footnote';
@@ -62,6 +65,7 @@ export function createMarkdownRenderer(input: CreateMarkdownRendererDependencies
     table_open: '表格',
     fence: '代码块',
     code_block: '代码块',
+    math_block: '公式',
   };
 
   const sourceHighlightStyle = HighlightStyle.define([
@@ -107,10 +111,17 @@ export function createMarkdownRenderer(input: CreateMarkdownRendererDependencies
   ]);
 
   const markdown = new MarkdownIt({
+    highlight: highlightCode,
     html: true,
     linkify: true,
     breaks: true,
   });
+  // 原始 HTML 不得伪造编辑源映射和图表能力属性。
+  for (const rule of ['html_block', 'html_inline']) {
+    markdown.renderer.rules[rule] = (tokens, index) => {
+      return sanitizeMarkdownHtml(tokens[index].content, { trustedAttributes: false });
+    };
+  }
 
   function resolveMarkdownPlugin(pluginLike: unknown, exportKey?: string) {
     if (typeof pluginLike === 'function') {
@@ -170,8 +181,26 @@ export function createMarkdownRenderer(input: CreateMarkdownRendererDependencies
   useMarkdownPlugin(resolveMarkdownPlugin(markdownItEmoji, 'full'));
 
   useMarkdownPlugin(markdownItTocDoneRight, {
+    slugify: headingSlug,
     level: [1, 2, 3, 4, 5, 6],
     containerClass: 'md-toc',
+  });
+  markdown.core.ruler.push('stable-heading-ids', (state) => {
+    // 复用预览解析结果统计字数，避免大文档再次进行完整 Markdown 解析。
+    rememberDocumentWords(state.src, state.tokens);
+    const used = new Set<string>();
+    state.tokens.forEach((token, index) => {
+      if (token.type !== 'heading_open') return;
+      const label = state.tokens[index + 1].children?.filter((child) => {
+        return ['text', 'code_inline'].includes(child.type);
+      }).map((child) => child.content).join('') || '';
+      const base = headingSlug(label);
+      let id = base;
+      let suffix = 1;
+      while (used.has(id)) id = `${base}-${suffix++}`;
+      used.add(id);
+      token.attrSet('id', id);
+    });
   });
 
   return { SESSION_STORAGE_KEY,RECENT_FILES_LIMIT,CONTENT_ZOOM_DEFAULT,

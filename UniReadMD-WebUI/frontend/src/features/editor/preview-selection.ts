@@ -8,11 +8,13 @@ export function createPreviewSelection(input: CreatePreviewSelectionDependencies
   } = input;
 
   function findSourceMappedNode(target: EventTarget | null) {
-    if (!(target instanceof HTMLElement)) {
+    if (!(target instanceof Element)) {
       return null;
     }
 
-    return target.closest<HTMLElement>('[data-source-start][data-source-end][data-source-token]');
+    // SVG 节点和文字也可触发点击，但编辑映射必须落在外层 HTML 源码块。
+    const mapped = target.closest('[data-source-start][data-source-end][data-source-token]');
+    return mapped instanceof HTMLElement ? mapped : null;
   }
 
   function parseInlineEditSelection(node: HTMLElement) {

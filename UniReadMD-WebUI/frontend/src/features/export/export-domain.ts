@@ -9,6 +9,7 @@ export function useExportDomain(resolve: ResolveWorkbenchDomains) {
     const domains = resolve();
     return useExportFeature({
       editor: domains.editor.foundation,
+      diagrams: domains.markdown.diagrams(),
       exportState: foundation(),
       presentation: domains.editor.presentation(),
       workspaceActions: domains.workspace.actions(),

@@ -1,6 +1,7 @@
 export interface ParsedMarkdownTable {
   header: string[];
   rows: string[][];
+  delimiters?: string[];
 }
 
 export interface PreviewTableCellSelection {
@@ -18,7 +19,10 @@ export type PreviewTableAction =
   | 'insert-col-right'
   | 'delete-col'
   | 'move-col-left'
-  | 'move-col-right';
+  | 'move-col-right'
+  | 'align-col-left'
+  | 'align-col-center'
+  | 'align-col-right';
 
 export interface PreviewTableActionResult {
   changed: boolean;
@@ -30,18 +34,34 @@ function parseMarkdownTableLine(line: string) {
   if (normalized.startsWith('|')) {
     normalized = normalized.slice(1);
   }
-  if (normalized.endsWith('|')) {
+  if (normalized.endsWith('|') && !/(?:^|[^\\])(?:\\\\)*\\\|$/.test(normalized)) {
     normalized = normalized.slice(0, -1);
   }
   if (!normalized) {
     return [''];
   }
 
-  return normalized.split('|').map((item) => item.trim());
+  // GFM 中只有未转义的竖线是列分隔符，代码片段中的竖线也必须转义。
+  const cells: string[] = [];
+  let start = 0;
+  let backslashes = 0;
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+    if (char === '|' && backslashes % 2 === 0) {
+      cells.push(normalized.slice(start, index).trim());
+      start = index + 1;
+    }
+    backslashes = char === '\\' ? backslashes + 1 : 0;
+  }
+  cells.push(normalized.slice(start).trim());
+  return cells;
 }
 
 function buildMarkdownTableLine(cells: string[]) {
-  return `| ${cells.join(' | ')} |`;
+  const escaped = cells.map((cell) => cell.replace(/(\\*)\|/g, (match, slashes: string) => {
+    return slashes.length % 2 ? match : `${slashes}\\|`;
+  }).replace(/\r?\n/g, '<br>'));
+  return `| ${escaped.join(' | ')} |`;
 }
 
 export function parseMarkdownTable(source: string): ParsedMarkdownTable | null {
@@ -58,6 +78,9 @@ export function parseMarkdownTable(source: string): ParsedMarkdownTable | null {
   }
 
   const header = parseMarkdownTableLine(lines[0]);
+  const delimiters = parseMarkdownTableLine(lines[1]);
+  if (delimiters.length !== header.length
+    || delimiters.some((item) => !/^:?-+:?$/.test(item))) return null;
   const rows = lines
     .slice(2)
     .filter((line) => line.includes('|'))
@@ -75,15 +98,23 @@ export function parseMarkdownTable(source: string): ParsedMarkdownTable | null {
     return nextRow.slice(0, colCount);
   };
 
-  return {
+  const table: ParsedMarkdownTable = {
     header: normalizeRow(header),
     rows: rows.map((row) => normalizeRow(row)),
   };
+  // 普通三横线表格保持旧模型形状，现有调用无需迁移。
+  if (delimiters.some((item) => item !== '---')) {
+    table.delimiters = [...delimiters];
+    while (table.delimiters.length < colCount) table.delimiters.push('---');
+  }
+  return table;
 }
 
 export function serializeMarkdownTable(table: ParsedMarkdownTable) {
   const colCount = Math.max(1, table.header.length);
-  const delimiter = buildMarkdownTableLine(new Array(colCount).fill('---'));
+  const delimiter = buildMarkdownTableLine(Array.from({ length: colCount }, (_, index) => {
+    return table.delimiters?.[index] || '---';
+  }));
   const body = table.rows.map((row) => {
     const normalized = [...row];
     while (normalized.length < colCount) {
@@ -124,6 +155,7 @@ function moveTableColumn(table: ParsedMarkdownTable, from: number, to: number) {
     row.splice(to, 0, current);
   };
   moveRow(table.header);
+  if (table.delimiters) moveRow(table.delimiters);
   table.rows.forEach((row) => moveRow(row));
   return true;
 }
@@ -136,6 +168,16 @@ export function applyPreviewTableActionToModel(
   const bodyIndex = selection.rowIndex - 1;
   const colCount = table.header.length;
   const createEmptyRow = () => new Array(colCount).fill('');
+  const alignment: Record<string, string> = {
+    'align-col-left': ':---', 'align-col-center': ':---:', 'align-col-right': '---:',
+  };
+  if (alignment[action]) {
+    table.delimiters ||= new Array(colCount).fill('---');
+    const index = Math.max(0, Math.min(selection.colIndex, colCount - 1));
+    const changed = table.delimiters[index] !== alignment[action];
+    table.delimiters[index] = alignment[action];
+    return { changed };
+  }
 
   if (action === 'insert-row-above') {
     const insertAt = Math.max(0, bodyIndex);
@@ -201,6 +243,7 @@ export function applyPreviewTableActionToModel(
       table.header.length,
     );
     table.header.splice(insertAt, 0, '');
+    table.delimiters?.splice(insertAt, 0, '---');
     table.rows.forEach((row) => {
       row.splice(insertAt, 0, '');
     });
@@ -222,6 +265,7 @@ export function applyPreviewTableActionToModel(
       table.header.length - 1,
     );
     table.header.splice(deleteAt, 1);
+    table.delimiters?.splice(deleteAt, 1);
     table.rows.forEach((row) => {
       row.splice(deleteAt, 1);
     });

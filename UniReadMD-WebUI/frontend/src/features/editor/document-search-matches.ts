@@ -1,5 +1,6 @@
 import type { DocMatchRange } from './editor-contracts';
 import { computed } from 'vue';
+import { advanceSearchOffset, buildSearchExpression } from './search-pattern';
 import type { useDocumentSearchState } from './document-search-state';
 import type { useWorkbenchStore } from './editor-store';
 type UseDocumentSearchMatchesDependencies =
@@ -8,6 +9,7 @@ type UseDocumentSearchMatchesDependencies =
 
 export function useDocumentSearchMatches(input: UseDocumentSearchMatchesDependencies) {
   const { docSearchCaseSensitive,docSearchMatchIndex,docSearchQuery,docSearchWholeWord,store,
+    docSearchRegex,
   } = input;
 
   function escapeRegExp(input: string) {
@@ -20,20 +22,10 @@ export function useDocumentSearchMatches(input: UseDocumentSearchMatchesDependen
     isWholeWord: boolean,
     isGlobal: boolean,
   ) {
-    const normalizedQuery = query.trim();
-    if (!normalizedQuery) {
-      return null;
-    }
-
-    const escaped = escapeRegExp(normalizedQuery);
-    const pattern = isWholeWord ? `\\b${escaped}\\b` : escaped;
-    const flags = `${isGlobal ? 'g' : ''}${isCaseSensitive ? '' : 'i'}`;
-
-    try {
-      return new RegExp(pattern, flags);
-    } catch {
-      return null;
-    }
+    return buildSearchExpression(query, {
+      caseSensitive: isCaseSensitive, wholeWord: isWholeWord, global: isGlobal,
+      regularExpression: docSearchRegex?.value,
+    });
   }
 
   const docSearchMatches = computed<DocMatchRange[]>(() => {
@@ -58,12 +50,8 @@ export function useDocumentSearchMatches(input: UseDocumentSearchMatchesDependen
         text: current[0],
       });
 
-      if (matches.length >= 400) {
-        break;
-      }
-
       if (current[0].length === 0) {
-        expression.lastIndex += 1;
+        expression.lastIndex = advanceSearchOffset(content, expression.lastIndex);
       }
     }
 
@@ -73,6 +61,10 @@ export function useDocumentSearchMatches(input: UseDocumentSearchMatchesDependen
   const docSearchSummary = computed(() => {
     const total = docSearchMatches.value.length;
     if (total === 0) {
+      if (docSearchQuery.value && !buildSearchRegExp(docSearchQuery.value,
+        docSearchCaseSensitive.value, docSearchWholeWord.value, false)) {
+        return '正则表达式无效';
+      }
       return 'No Results';
     }
 

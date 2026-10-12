@@ -1,9 +1,20 @@
 const path = require('node:path');
+const fs = require('node:fs');
 
 const { createContractError, requireString } = require('./errors.cjs');
 
 function toAuthorizationKey(filePath) {
-  const resolvedPath = path.resolve(requireString(filePath, 'filePath'));
+  let resolvedPath = path.resolve(requireString(filePath, 'filePath'));
+  try {
+    resolvedPath = fs.realpathSync.native(resolvedPath);
+  } catch {
+    try {
+      resolvedPath = path.join(fs.realpathSync.native(path.dirname(resolvedPath)),
+        path.basename(resolvedPath));
+    } catch {
+      // 不存在的路径仍保留规范化名称，实际读写时报告文件错误。
+    }
+  }
   return process.platform === 'win32' ? resolvedPath.toLowerCase() : resolvedPath;
 }
 
@@ -17,6 +28,7 @@ function resolveOwnerId(owner) {
 
 function createAuthorizationService() {
   const authorizedPaths = new Map();
+  const authorizedDirectories = new Map();
 
   function grant(ownerId, filePath) {
     const key = resolveOwnerId(ownerId);
@@ -27,8 +39,14 @@ function createAuthorizationService() {
   }
 
   function isAuthorized(ownerId, filePath) {
-    const paths = authorizedPaths.get(resolveOwnerId(ownerId));
-    return Boolean(paths?.has(toAuthorizationKey(filePath)));
+    const ownerKey = resolveOwnerId(ownerId);
+    const fileKey = toAuthorizationKey(filePath);
+    if (authorizedPaths.get(ownerKey)?.has(fileKey)) return true;
+    return [...(authorizedDirectories.get(ownerKey) || [])].some((root) => {
+      const relative = path.relative(root, fileKey);
+      return !relative.startsWith(`..${path.sep}`)
+        && relative !== '..' && !path.isAbsolute(relative);
+    });
   }
 
   function assertAuthorized(ownerId, filePath) {
@@ -40,16 +58,26 @@ function createAuthorizationService() {
 
   function revoke(ownerId) {
     authorizedPaths.delete(resolveOwnerId(ownerId));
+    authorizedDirectories.delete(resolveOwnerId(ownerId));
   }
 
   function grantMany(ownerId, filePaths) {
     return filePaths.map((filePath) => grant(ownerId, filePath));
   }
 
+  function grantDirectory(owner, directory) {
+    const key = resolveOwnerId(owner);
+    const roots = authorizedDirectories.get(key) || new Set();
+    roots.add(toAuthorizationKey(directory));
+    authorizedDirectories.set(key, roots);
+    return path.resolve(directory);
+  }
+
   return {
     assertAuthorized,
     grant,
     grantMany,
+    grantDirectory,
     isAuthorized,
     revoke,
   };

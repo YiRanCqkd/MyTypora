@@ -24,6 +24,9 @@ const DEFAULT_SETTINGS: SettingsState = {
   contentZoom: 100,
   viewMode: 'split',
   autoSave: false,
+  documentToolsVisible: false,
+  preferencesVisible: false,
+  autoSaveInterval: 300,
   userCssEnabled: false,
   userCssPath: '',
   spellCheckEnabled: true,
@@ -56,8 +59,25 @@ function deriveFallbackExportPath(
 
 const VIRTUAL_STORE = new Map<string, string>();
 let virtualFileId = 0;
+const FALLBACK_THEME_KEY = 'unireadmd.web-theme.v1';
+function readFallbackTheme(): SettingsState['theme'] {
+  try {
+    const theme = localStorage.getItem(FALLBACK_THEME_KEY);
+    return theme === 'dark' || theme === 'system' ? theme : 'light';
+  } catch { return 'light'; }
+}
+const VIEW_VISIBILITY_KEY = 'unireadmd.view-visibility.v1';
+function readViewVisibility() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(VIEW_VISIBILITY_KEY) || '{}');
+    return { documentToolsVisible: saved?.documentToolsVisible === true,
+      preferencesVisible: saved?.preferencesVisible === true };
+  } catch { return { documentToolsVisible: false, preferencesVisible: false }; }
+}
 let settingsState: SettingsState = {
   ...DEFAULT_SETTINGS,
+  theme: readFallbackTheme(),
+  ...readViewVisibility(),
 };
 let recentFilesState: string[] = [];
 
@@ -138,6 +158,18 @@ function setSetting(
     ...settingsState,
     [key]: value,
   };
+  if (key === 'theme') {
+    try { localStorage.setItem(FALLBACK_THEME_KEY, String(value)); }
+    catch { /* 浏览器禁用存储时，保留当前页面的主题选择。 */ }
+  }
+  if (key === 'documentToolsVisible' || key === 'preferencesVisible') {
+    try {
+      localStorage.setItem(VIEW_VISIBILITY_KEY, JSON.stringify({
+        documentToolsVisible: settingsState.documentToolsVisible === true,
+        preferencesVisible: settingsState.preferencesVisible === true,
+      }));
+    } catch { /* 浏览器禁用存储时，保留当前页面的显示设置。 */ }
+  }
 
   return {
     key,

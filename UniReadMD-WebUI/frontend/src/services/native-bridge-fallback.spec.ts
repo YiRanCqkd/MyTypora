@@ -1,245 +1,154 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { installNativeBridgeFallback } from './native-bridge-fallback';
+afterEach(() => {
+  Reflect.deleteProperty(window, 'nativeBridge');
+  localStorage.removeItem('unireadmd.web-theme.v1');
+  localStorage.removeItem('unireadmd.view-visibility.v1');
+  vi.restoreAllMocks();
+  vi.resetModules();
+});
 
-function requireBridge() {
-  const bridge = window.nativeBridge;
-  if (!bridge) {
-    throw new Error('测试要求 fallback bridge 已安装');
-  }
-  return bridge;
+async function install() {
+  Reflect.deleteProperty(window, 'nativeBridge');
+  const module = await import('./native-bridge-fallback');
+  module.installNativeBridgeFallback();
+  return window.nativeBridge;
 }
 
-describe('native bridge fallback', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-    Object.defineProperty(window, 'nativeBridge', {
-      configurable: true,
-      value: undefined,
-      writable: true,
+describe('浏览器主题持久化', () => {
+  it('视图区域默认隐藏，开关独立且重载后保留', async () => {
+    const first = await install();
+    expect((await first.settings.getAll()).settings).toMatchObject({
+      documentToolsVisible: false, preferencesVisible: false,
     });
-    Object.defineProperty(navigator, 'userAgent', {
-      configurable: true,
-      value: 'Mozilla/5.0',
+    await first.settings.set('documentToolsVisible', true);
+    vi.resetModules();
+    const second = await install();
+    expect((await second.settings.getAll()).settings).toMatchObject({
+      documentToolsVisible: true, preferencesVisible: false,
     });
+    localStorage.setItem('unireadmd.view-visibility.v1', '损坏');
+    vi.resetModules();
+    expect((await (await install()).settings.getAll()).settings.documentToolsVisible).toBe(false);
+  });
+  it('刷新后仍读取系统主题选项', async () => {
+    Reflect.deleteProperty(window, 'nativeBridge');
+    const first = await import('./native-bridge-fallback');
+    first.installNativeBridgeFallback();
+    await window.nativeBridge.settings.set('theme', 'system');
+    Reflect.deleteProperty(window, 'nativeBridge');
+    vi.resetModules();
+    const second = await import('./native-bridge-fallback');
+    second.installNativeBridgeFallback();
+    expect((await window.nativeBridge.settings.getAll()).settings.theme).toBe('system');
   });
 
-  it(
-    'Given web runtime, when saving and opening files, then the virtual store is consistent',
-    async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-    const first = await bridge.file.saveMarkdown({ content: '# first' });
-    const second = await bridge.file.saveMarkdown({
-      content: '# second',
-      filePath: '/virtual/folder/second.markdown',
-    });
+  it('损坏主题回退到浅色', async () => {
+    localStorage.setItem('unireadmd.web-theme.v1', 'invalid');
+    Reflect.deleteProperty(window, 'nativeBridge');
+    const bridge = await import('./native-bridge-fallback');
+    bridge.installNativeBridgeFallback();
+    expect((await window.nativeBridge.settings.getAll()).settings.theme).toBe('light');
+  });
 
+  it('虚拟文档可保存、重新打开，同目录列表过滤非 Markdown 和其他目录', async () => {
+    const bridge = await install();
+    const first = await bridge.file.saveMarkdown({ content: '# 新文档' });
     expect(first?.filePath).toMatch(/^\/virtual\/document-\d+\.md$/);
-    expect(second?.filePath).toBe('/virtual/folder/second.markdown');
-    expect(await bridge.file.openFromPath({
-      filePath: second?.filePath || '',
-    })).toEqual({
-      content: '# second',
-      filePath: '/virtual/folder/second.markdown',
+    await bridge.file.saveMarkdown({ filePath: '/virtual/空白.markdown', content: '' });
+    await bridge.file.saveMarkdown({ filePath: '/other/其他.md', content: '其他目录' });
+    await bridge.file.saveMarkdown({ filePath: '/virtual/图片.txt', content: '非 Markdown' });
+    expect(await bridge.file.openFromPath({ filePath: first!.filePath }))
+      .toMatchObject({ content: '# 新文档' });
+    expect(await bridge.file.openFromPath({ filePath: '/virtual/空白.markdown' }))
+      .toMatchObject({ content: '' });
+    expect(await bridge.file.openFromPath({ filePath: '/missing.md' })).toBeNull();
+    const listed = await bridge.file.listMarkdownInDirectory({ filePath: first!.filePath });
+    expect(listed.directoryPath).toBe('/virtual');
+    expect(listed.filePaths).toEqual(expect.arrayContaining([
+      first!.filePath, '/virtual/空白.markdown',
+    ]));
+    expect(listed.filePaths).not.toContain('/other/其他.md');
+    expect(listed.filePaths).not.toContain('/virtual/图片.txt');
+    expect((await bridge.file.listMarkdownInDirectory({ filePath: 'root.md' })).directoryPath)
+      .toBe('/');
+  });
+
+  it('浏览器导出保持虚拟内容，缺少 Pandoc 时拒绝对应格式', async () => {
+    const bridge = await install();
+    expect((await bridge.exporter.getCapabilities()).pandocAvailable).toBe(false);
+    const html = await bridge.exporter.exportHtml({ html: '<p>正文</p>' });
+    expect(await bridge.file.openFromPath({ filePath: html!.filePath }))
+      .toMatchObject({ content: '<p>正文</p>' });
+    await bridge.exporter.exportHtml({ html: '指定输出', targetPath: '/virtual/指定.html' });
+    expect(await bridge.exporter.exportDocument({ format: 'html', html: '内容', markdown: '',
+      sourceFilePath: 'C:\\docs\\中文.md' }))
+      .toMatchObject({ filePath: '/virtual/中文.html', engine: 'builtin' });
+    const plain = await bridge.exporter.exportDocument({ format: 'html', html: '',
+      markdown: '# 正文', targetPath: '/virtual/plain.html' });
+    expect(await bridge.file.openFromPath({ filePath: plain!.filePath }))
+      .toMatchObject({ content: '# 正文' });
+    const unnamed = await bridge.exporter.exportDocument({
+      format: 'html', html: '', markdown: '',
     });
-    expect(await bridge.file.openFromPath({ filePath: '/virtual/missing.md' })).toBeNull();
+    expect(unnamed?.filePath)
+      .toBe('/virtual/document.html');
+    await expect(bridge.exporter.exportDocument({ format: 'docx', html: '正文', markdown: '' }))
+      .rejects.toThrow('未检测到 Pandoc');
+  });
+
+  it('最近文档去重并限制数量，拼写语言与设置读取保持一致', async () => {
+    const bridge = await install();
+    const files = ['C:\\docs\\a.md', 'c:/docs/A.md', '', 'bad.txt', 123 as never,
+      ...Array.from({ length: 20 }, (_, index) => `/docs/${index}.markdown`)];
+    await bridge.settings.setRecentFiles(files);
+    const recent = (await bridge.settings.getRecentFiles()).filePaths;
+    expect(recent).toHaveLength(12);
+    expect(recent.filter((file) => /a\.md$/i.test(file))).toHaveLength(1);
+    expect(recent).not.toContain('bad.txt');
+    await bridge.settings.set('fontSize', 18);
+    expect((await bridge.settings.get('fontSize')).value).toBe(18);
+    expect(await bridge.settings.selectUserCssFile()).toBeNull();
+    expect((await bridge.spell.getState()).dictionaryStatus).toBe('ready');
+    expect((await bridge.spell.setEnabled(false)).enabled).toBe(false);
+    expect((await bridge.spell.setLanguage('unknown')).dictionaryStatus).toBe('missing');
+    expect((await bridge.spell.setLanguage('')).language).toBe('en-US');
+  });
+
+  it('浏览器宿主兼容接口可调用，已有原生桥接始终保留', async () => {
+    const bridge = await install();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    expect((await bridge.app.getVersion()).version).toBe('web-fallback');
+    expect(await bridge.app.consumeLaunchFilePath()).toBeNull();
+    bridge.app.onLaunchFile(() => {})();
+    bridge.menu!.onCommand(() => {})();
+    await bridge.app.logEvent({ level: 'info', message: '信息' });
+    await bridge.app.logEvent({ level: 'error', message: '错误', traceId: 'trace' });
     expect(await bridge.file.openMarkdown()).toBeNull();
-    expect(bridge.file.getPathForFile(new File([], 'sample.md'))).toBe('');
-    },
-  );
-
-  it(
-    'Given virtual files, when listing a directory, then only Markdown siblings are returned',
-    async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-    await bridge.file.saveMarkdown({ content: 'a', filePath: '/virtual/docs/b.md' });
-    await bridge.file.saveMarkdown({ content: 'b', filePath: '/virtual/docs/a.markdown' });
-    await bridge.file.saveMarkdown({ content: 'c', filePath: '/virtual/other/c.md' });
-    await bridge.file.saveMarkdown({ content: 'x', filePath: '/virtual/docs/ignored.txt' });
-    await bridge.file.saveMarkdown({ content: 'root', filePath: 'root.md' });
-
-    await expect(bridge.file.listMarkdownInDirectory({
-      filePath: '/virtual/docs/current.md',
-    })).resolves.toEqual({
-      directoryPath: '/virtual/docs',
-      filePaths: [
-        '/virtual/docs/a.markdown',
-        '/virtual/docs/b.md',
-      ],
-    });
-    await expect(bridge.file.listMarkdownInDirectory({ filePath: 'root.md' })).resolves.toEqual({
-      directoryPath: '/',
-      filePaths: ['root.md'],
-    });
-    },
-  );
-
-  it(
-    'Given settings input, when reading and updating state, then normalization is applied',
-    async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-    const initial = await bridge.settings.getAll();
-    expect(initial.settings.theme).toBe('light');
-
-    const update = await bridge.settings.set('theme', 'dark');
-    expect(update.value).toBe('dark');
-    await expect(bridge.settings.get('theme')).resolves.toEqual({
-      key: 'theme',
-      value: 'dark',
-    });
-
-    const candidates = [
-      ' /virtual/A.md ',
-      '/virtual/a.MD',
-      '/virtual/ignored.txt',
-      '',
-      ...Array.from({ length: 14 }, (_, index) => `/virtual/${index}.md`),
-    ];
-    const recent = await bridge.settings.setRecentFiles(candidates);
-    expect(recent.filePaths).toHaveLength(12);
-    expect(recent.filePaths[0]).toBe('/virtual/A.md');
-    expect((await bridge.settings.getRecentFiles()).filePaths).toEqual(recent.filePaths);
-    await expect(bridge.settings.selectUserCssFile()).resolves.toBeNull();
-    },
-  );
-
-  it(
-    'Given export payloads, when using builtin formats, then targets and capabilities are stable',
-    async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-    await expect(bridge.exporter.exportHtml({ html: '<h1>doc</h1>' })).resolves.toEqual({
-      filePath: '/virtual/export.html',
-    });
-    await expect(bridge.exporter.exportDocument({
-      format: 'pdf',
-      html: '<h1>doc</h1>',
-      markdown: '# doc',
-      sourceFilePath: 'I:\\docs\\guide.md',
-    })).resolves.toEqual({
-      engine: 'builtin',
-      filePath: '/virtual/guide.pdf',
-      format: 'pdf',
-    });
-    await expect(bridge.exporter.exportDocument({
-      format: 'png',
-      html: '<h1>doc</h1>',
-      markdown: '# doc',
-    })).resolves.toMatchObject({
-      filePath: '/virtual/document.png',
-    });
-    await expect(bridge.exporter.getCapabilities()).resolves.toMatchObject({
-      builtinFormats: ['html', 'pdf', 'png', 'jpeg'],
-      pandocAvailable: false,
-    });
-    },
-  );
-
-  it(
-    'Given an unsupported export, when exporting, then a visible Pandoc error is returned',
-    async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-
-    await expect(bridge.exporter.exportDocument({
-      format: 'docx',
-      html: '<h1>doc</h1>',
-      markdown: '# doc',
-    })).rejects.toThrow('当前环境未检测到 Pandoc');
-    },
-  );
-
-  it(
-    'Given fallback services, when invoking app, window and context APIs, then contracts hold',
-    async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-    const info = vi.spyOn(console, 'log').mockImplementation(() => {});
-    const context = bridge.context;
-    const menu = bridge.menu;
-    if (!context || !menu) {
-      throw new Error('测试要求 context 和 menu fallback 可用');
+    expect(bridge.file.getPathForFile(new File([], '文档.md'))).toBe('');
+    expect((await bridge.getAppVersion())).toBe('web-fallback');
+    expect(await bridge.openMarkdownFile()).toBeNull();
+    expect(await bridge.saveMarkdownFile({ content: '兼容保存' })).toHaveProperty('filePath');
+    expect(await bridge.window.isMaximized()).toEqual({ isMaximized: false });
+    for (const action of ['minimize', 'toggleMaximize', 'close', 'toggleDevTools'] as const) {
+      expect(await bridge.window[action]()).toEqual({ ok: true });
     }
-
-    await expect(bridge.app.getVersion()).resolves.toEqual({ version: 'web-fallback' });
-    await expect(bridge.app.consumeLaunchFilePath()).resolves.toBeNull();
-    await expect(bridge.app.logEvent({ level: 'info', message: 'ready' })).resolves.toEqual({
-      ok: true,
-    });
-    expect(info).toHaveBeenCalledWith('[bridge:info]', 'ready', '');
-    expect(typeof bridge.app.onLaunchFile(() => {})).toBe('function');
-    await expect(bridge.window.minimize()).resolves.toEqual({ ok: true });
-    await expect(bridge.window.toggleMaximize()).resolves.toEqual({ ok: true });
-    await expect(bridge.window.isMaximized()).resolves.toEqual({ isMaximized: false });
-    await expect(bridge.window.close()).resolves.toEqual({ ok: true });
-    await expect(bridge.window.toggleDevTools()).resolves.toEqual({ ok: true });
-    await expect(context.showFileTreeMenu({
-      filePath: '/virtual/a.md',
-      x: 1,
-      y: 2,
-    })).resolves.toEqual({ ok: true });
-    expect(typeof menu.onCommand(() => {})).toBe('function');
-    },
-  );
-
-  it(
-    'Given spell settings, when language and enabled state change, then status follows',
-    async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-    await expect(bridge.spell.setEnabled(false)).resolves.toMatchObject({ enabled: false });
-    await expect(bridge.spell.setLanguage('unknown')).resolves.toMatchObject({
-      dictionaryStatus: 'missing',
-      language: 'unknown',
-    });
-    await expect(bridge.spell.setLanguage('zh-CN')).resolves.toMatchObject({
-      dictionaryStatus: 'ready',
-      language: 'zh-CN',
-    });
-    await expect(bridge.spell.getState()).resolves.toMatchObject({ language: 'zh-CN' });
-    },
-  );
-
-  it('Given legacy methods, when called, then they preserve fallback compatibility', async () => {
-    installNativeBridgeFallback();
-    const bridge = requireBridge();
-    await expect(bridge.getAppVersion()).resolves.toBe('web-fallback');
-    await expect(bridge.openMarkdownFile()).resolves.toBeNull();
-    const saved = await bridge.saveMarkdownFile({ content: 'legacy' });
-    expect(saved?.filePath).toMatch(/^\/virtual\/document-\d+\.md$/);
+    expect(await bridge.context!.showFileTreeMenu({ filePath: '/virtual/a.md' }))
+      .toEqual({ ok: true });
+    (await import('./native-bridge-fallback')).installNativeBridgeFallback();
+    expect(window.nativeBridge).toBe(bridge);
   });
 
-  it('Given an existing bridge, when installing fallback, then it is not replaced', () => {
-    const existing = { marker: 'existing' };
-    Object.defineProperty(window, 'nativeBridge', {
-      configurable: true,
-      value: existing,
-      writable: true,
-    });
-
-    installNativeBridgeFallback();
-
-    expect(window.nativeBridge).toBe(existing);
-  });
-
-  it(
-    'Given Electron without preload, when installing fallback, then the security boundary holds',
-    () => {
+  it('禁用存储仍可切换当前主题，Electron 缺少 preload 时不伪造原生能力', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('拒绝'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('拒绝'); });
+    const bridge = await install();
+    expect((await bridge.settings.set('theme', 'dark')).value).toBe('dark');
+    Reflect.deleteProperty(window, 'nativeBridge');
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Electron');
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
-    Object.defineProperty(navigator, 'userAgent', {
-      configurable: true,
-      value: 'Electron/37.2.0',
-    });
-
-    installNativeBridgeFallback();
-
+    (await import('./native-bridge-fallback')).installNativeBridgeFallback();
     expect(window.nativeBridge).toBeUndefined();
-    expect(error).toHaveBeenCalledWith(
-      '[bridge:fallback] nativeBridge missing in Electron runtime',
-    );
-    },
-  );
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('nativeBridge missing'));
+  });
 });

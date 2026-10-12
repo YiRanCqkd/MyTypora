@@ -33,8 +33,17 @@ jobs:
       - name: Run frontend quality gate
         run: npm --prefix UniReadMD-WebUI run quality
 
+      - name: 审计运行与开发依赖
+        run: npm --prefix UniReadMD-WebUI run quality:audit
+
+      - name: 检查全部前端包体
+        run: npm --prefix UniReadMD-WebUI/frontend run check:bundle
+
       - name: Install Playwright browser
         run: npm --prefix UniReadMD-WebUI/frontend exec playwright install chromium
+
+      - name: 验证真实 Electron 流程
+        run: npm --prefix UniReadMD-WebUI run test:native
 
       - name: Run frontend E2E baseline
         shell: pwsh
@@ -43,7 +52,7 @@ jobs:
           $env:PLAYWRIGHT_JSON_OUTPUT_NAME = $report
           npm --prefix UniReadMD-WebUI/frontend run e2e -- --reporter=json
           $playwrightExit = $LASTEXITCODE
-          if ($playwrightExit -notin @(0, 1)) {
+          if ($playwrightExit -ne 0) {
             exit $playwrightExit
           }
           npm --prefix UniReadMD-WebUI/frontend run check:e2e-baseline

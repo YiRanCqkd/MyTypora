@@ -6,6 +6,32 @@ import {
 } from './preview-table';
 
 describe('preview table utils', () => {
+  it('编辑与移动列应保持对齐、转义竖线和代码单元格', () => {
+    const table = parseMarkdownTable(
+      '| 中间 | 右侧 |\n| :---: | ---: |\n| a\\|b | `x\\|y` |',
+    )!;
+    expect(table.header).toHaveLength(2);
+    expect(table.rows[0]).toEqual(['a\\|b', '`x\\|y`']);
+    table.rows[0][0] = '新值|尾部';
+    applyPreviewTableActionToModel(table, { rowIndex: 1, colIndex: 1 }, 'move-col-left');
+    const output = serializeMarkdownTable(table);
+    expect(output).toContain('| ---: | :---: |');
+    expect(output).toContain('| `x\\|y` | 新值\\|尾部 |');
+    expect(parseMarkdownTable(output)?.rows[0]).toHaveLength(2);
+    applyPreviewTableActionToModel(table, { rowIndex: 1, colIndex: 0 }, 'insert-col-left');
+    expect(table.delimiters).toEqual(['---', '---:', ':---:']);
+    applyPreviewTableActionToModel(table, { rowIndex: 1, colIndex: 1 }, 'delete-col');
+    expect(table.delimiters).toEqual(['---', ':---:']);
+  });
+
+  it('奇偶转义与无边框末尾转义竖线应正确解析，错误分隔行应拒绝', () => {
+    expect(parseMarkdownTable('A | B\n--- | ---\nx | y\\|')?.rows[0])
+      .toEqual(['x', 'y\\|']);
+    expect(parseMarkdownTable('| A | B |\n| --- | --- |\n| x\\\\ | y |')?.rows[0])
+      .toEqual(['x\\\\', 'y']);
+    expect(parseMarkdownTable('A | B\n普通 | 文字')).toBeNull();
+  });
+
   it('parseMarkdownTable + serializeMarkdownTable 应能补齐空单元格', () => {
     const input = [
       '| A | B |',

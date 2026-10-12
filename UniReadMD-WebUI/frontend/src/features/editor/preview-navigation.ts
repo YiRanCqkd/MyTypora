@@ -9,7 +9,7 @@ type UsePreviewNavigationDependencies =
   ReturnType<typeof createWorkbenchRuntime>;
 
 export function usePreviewNavigation(input: UsePreviewNavigationDependencies) {
-  const { currentCursorLine,previewHost,resolvePreviewHeadingNode,runtime,
+  const { currentCursorLine,previewHost,runtime,
   } = input;
 
   function refreshPreviewSourceNodes() {
@@ -41,11 +41,6 @@ export function usePreviewNavigation(input: UsePreviewNavigationDependencies) {
   }
 
   function resolvePreviewNodeByLine(lineNumber: number) {
-    const headingNode = resolvePreviewHeadingNode(lineNumber);
-    if (headingNode) {
-      return headingNode;
-    }
-
     if (runtime.previewSourceNodes.length === 0) {
       refreshPreviewSourceNodes();
     }
@@ -57,6 +52,12 @@ export function usePreviewNavigation(input: UsePreviewNavigationDependencies) {
     const exact = runtime.previewSourceNodes.find((item) => item.line === lineNumber);
     if (exact) {
       return exact.node;
+    }
+    for (let index = runtime.previewSourceNodes.length - 1; index >= 0; index -= 1) {
+      const item = runtime.previewSourceNodes[index];
+      if (item.line <= lineNumber && Number(item.node.dataset.sourceEnd) >= lineNumber) {
+        return item.node;
+      }
     }
 
     let nearestNext: {
@@ -107,17 +108,15 @@ export function usePreviewNavigation(input: UsePreviewNavigationDependencies) {
     }
 
     const anchorTop = preview.scrollTop + 18;
-    let activeLine = runtime.previewSourceNodes[0].line;
-    for (const item of runtime.previewSourceNodes) {
-      if (item.node.offsetTop <= anchorTop) {
-        activeLine = item.line;
-        continue;
-      }
-
-      break;
+    const nodes = runtime.previewSourceNodes;
+    let low = 0;
+    let high = nodes.length;
+    while (low < high) {
+      const middle = (low + high) >>> 1;
+      if (nodes[middle].node.offsetTop <= anchorTop) low = middle + 1;
+      else high = middle;
     }
-
-    return activeLine;
+    return nodes[Math.max(0, low - 1)].line;
   }
 
   function scrollPreviewToLine(lineNumber: number) {

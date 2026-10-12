@@ -24,11 +24,12 @@ export function useKeyboardCommands(input: UseKeyboardCommandsDependencies) {
   const { cancelPreviewInlineEdit,closeDocSearchPanel,closePreviewTableCellEditor,
     closePreviewTableMenu,closeSourceContextMenu,exportHtml,goToNextDocMatch,openDocSearchPanel,
     openFile,previewInlineEditVisible,previewTableCellEditVisible,previewTableMenuVisible,
-    saveAsFile,saveFile,showDocSearchPanel,sourceContextMenuVisible,toggleFocusMode,
+    saveAsFile,saveFile,newFile,showDocSearchPanel,sourceContextMenuVisible,toggleFocusMode,
     toggleSpellPanel,toggleTypewriterMode,
   } = input;
 
   function handleGlobalKeydown(event: KeyboardEvent) {
+    if (event.isComposing || input.previewInlineEditComposing.value) return;
     if (event.key === 'Escape') {
       if (previewTableMenuVisible.value) {
         event.preventDefault();
@@ -110,6 +111,11 @@ export function useKeyboardCommands(input: UseKeyboardCommandsDependencies) {
     if (event.key.toLowerCase() === 'o') {
       event.preventDefault();
       void openFile();
+      return;
+    }
+    if (event.key.toLowerCase() === 'n') {
+      event.preventDefault();
+      void newFile();
       return;
     }
 

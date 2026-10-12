@@ -97,29 +97,31 @@ export function findMatchedLines(
     return [];
   }
 
-  return content
-    .split(/\r?\n/)
-    .map((line, index) => ({
-      lineNo: index + 1,
-      line,
-    }))
-    .filter((item) => item.line.toLowerCase().includes(normalizedQuery))
-    .slice(0, maxResults);
+  const result: SearchLineItem[] = [];
+  const limit = Math.max(0, Math.trunc(maxResults));
+  let offset = 0;
+  let lineNo = 1;
+  while (offset <= content.length && result.length < limit) {
+    const end = content.indexOf('\n', offset);
+    const line = content.slice(offset, end < 0 ? content.length : end).replace(/\r$/, '');
+    if (line.toLowerCase().includes(normalizedQuery)) result.push({ lineNo, line });
+    if (end < 0) break;
+    offset = end + 1;
+    lineNo += 1;
+  }
+  return result;
 }
 
 export function findActiveHeadingLine(headings: HeadingItem[], cursorLine: number): number {
-  let matchedLine = 0;
-
-  for (const item of headings) {
-    if (item.line <= cursorLine) {
-      matchedLine = item.line;
-      continue;
-    }
-
-    break;
+  // 大纲按源行排序，滚动时通过二分查找定位，避免反复扫描全部标题。
+  let low = 0;
+  let high = headings.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (headings[middle].line <= cursorLine) low = middle + 1;
+    else high = middle;
   }
-
-  return matchedLine;
+  return low > 0 ? headings[low - 1].line : 0;
 }
 
 export function hasMathSyntax(content: string): boolean {

@@ -1,23 +1,29 @@
 import { computed } from 'vue';
+import MarkdownIt from 'markdown-it';
+import { getCachedDocumentWords, rememberDocumentWords } from '../markdown/document-text';
 import type { useWorkbenchStore } from './editor-store';
 type UseDocumentStatisticsDependencies =
   ReturnType<typeof useWorkbenchStore>;
+
+const statisticsParser = new MarkdownIt({ html: true });
+
+export function countDocumentWords(content: string) {
+  const cached = getCachedDocumentWords(content);
+  if (cached !== null) return cached;
+  const tokens = statisticsParser.parse(content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, ''), {});
+  return rememberDocumentWords(content, tokens);
+}
 
 export function useDocumentStatistics(input: UseDocumentStatisticsDependencies) {
   const { store,
   } = input;
 
   const contentCharCount = computed(() => {
-    return store.content.replace(/\r?\n/g, '').length;
+    return Array.from(store.content.replace(/\r?\n/g, '')).length;
   });
 
   const contentWordCount = computed(() => {
-    const tokens = store.content
-      .replace(/\r?\n/g, ' ')
-      .split(/\s+/)
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
-    return tokens.length;
+    return countDocumentWords(store.content);
   });
 
   const contentReadMinutes = computed(() => {

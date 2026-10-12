@@ -1,4 +1,7 @@
 import katex from 'katex';
+import 'katex/contrib/mhchem';
+import { installAcademicMath, substituteMathReferences, type AcademicMath }
+  from '../features/markdown/academic-math';
 import type MarkdownIt from 'markdown-it';
 import type StateBlock from 'markdown-it/lib/rules_block/state_block.mjs';
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs';
@@ -16,14 +19,16 @@ function escapeHtml(input: string): string {
   return input.replace(ESCAPE_RE, (ch) => ESCAPE_MAP[ch] || ch);
 }
 
-function renderMath(content: string, display: boolean): string {
+function renderMath(content: string, display: boolean, context?: AcademicMath): string {
   try {
-    return katex.renderToString(content, {
+    return katex.renderToString(substituteMathReferences(content, context), {
       displayMode: display,
       throwOnError: false,
       strict: 'ignore',
       output: 'htmlAndMathml',
-      trust: true,
+      trust: false,
+      macros: context?.macros,
+      globalGroup: true,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -185,11 +190,27 @@ const markdownItMathJax3 = (md: MarkdownIt) => {
   md.block.ruler.after('blockquote', 'math_block', mathBlock, {
     alt: ['paragraph', 'reference', 'blockquote', 'list'],
   });
-  md.renderer.rules.math_inline = (tokens, idx) => {
-    return renderMath(tokens[idx].content, false);
+  installAcademicMath(md);
+  md.renderer.rules.math_inline = (tokens, idx, _options, env) => {
+    const reference = /^\\(eqref|ref)\{([^{}]{1,200})\}$/.exec(tokens[idx].content.trim());
+    const context = env.academicMath as AcademicMath | undefined;
+    if (reference && context?.labels.has(reference[2])) {
+      const label = md.utils.escapeHtml(substituteMathReferences(tokens[idx].content, context));
+      const anchor = md.utils.escapeHtml(encodeURIComponent(reference[2]));
+      return `<a class='math-reference' href='#equation-${anchor}'`
+        + `>${label}</a>`;
+    }
+    return renderMath(tokens[idx].content, false, context);
   };
-  md.renderer.rules.math_block = (tokens, idx) => {
-    return renderMath(tokens[idx].content, true);
+  md.renderer.rules.math_block = (tokens, idx, _options, env) => {
+    const token = tokens[idx];
+    const start = (token.map?.[0] || 0) + 1;
+    const end = token.map?.[1] || start;
+    const label = token.meta?.equationLabel;
+    const id = label ? ` id='equation-${md.utils.escapeHtml(encodeURIComponent(label))}'` : '';
+    return `<div class='math-block'${id} data-source-start='${start}'`
+      + ` data-source-end='${end}' data-source-token='math_block'>`
+      + renderMath(token.content, true, env.academicMath) + '</div>\n';
   };
 };
 

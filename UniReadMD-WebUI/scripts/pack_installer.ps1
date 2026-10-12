@@ -1,6 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$packageVersion = (Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw |
+  ConvertFrom-Json).version
+$windowsVersion = $packageVersion + '.0'
 $stageOutputName = 'electron-stage-' + [guid]::NewGuid().ToString('N')
 $prepackagedName = 'electron-prepackaged-' + [guid]::NewGuid().ToString('N')
 $installerOutputName = 'electron-installer-' + [guid]::NewGuid().ToString('N')
@@ -45,9 +48,11 @@ try {
     & $rcedit $patchedExe `
       --set-icon $sourceIcon `
       --set-version-string ProductName UniReadMD `
-      --set-version-string FileDescription UniReadMD `
-      --set-version-string CompanyName UniReadMD `
-      --set-version-string OriginalFilename UniReadMD.exe
+      --set-version-string FileDescription 联软MD文档阅读器 `
+      --set-version-string CompanyName Leagsoft `
+      --set-version-string OriginalFilename UniReadMD.exe `
+      --set-file-version $windowsVersion `
+      --set-product-version $windowsVersion
     if ($LASTEXITCODE -eq 0) {
       $patched = $true
       break

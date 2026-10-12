@@ -79,9 +79,14 @@ export function useTableActions(input: UseTableActionsDependencies) {
       colIndex: context.colIndex,
     };
     const containerRect = container.getBoundingClientRect();
+    const menuHeight = Math.min(470, containerRect.height - 16);
     previewTableMenuStyle.value = {
-      left: `${event.clientX - containerRect.left}px`,
-      top: `${event.clientY - containerRect.top}px`,
+      left: `${Math.max(8, Math.min(event.clientX - containerRect.left,
+        containerRect.width - 184))}px`,
+      top: `${Math.max(8, Math.min(event.clientY - containerRect.top,
+        containerRect.height - menuHeight - 8))}px`,
+      maxHeight: `${Math.max(100, menuHeight)}px`,
+      overflowY: 'auto',
     };
     previewTableMenuVisible.value = true;
   }

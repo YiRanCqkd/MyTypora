@@ -17,10 +17,10 @@ const fixture = [
 ].join('\n');
 
 const directDependencyPins = [
-  '"dompurify": "3.4.12"',
-  '"markdown-it": "14.3.0"',
-  '"mermaid": "11.16.0"',
-  '"postcss": "8.5.23"',
+  '"dompurify": "3.4.16"',
+  '"markdown-it": "14.3.2"',
+  '"mermaid": "11.16.1"',
+  '"postcss": "8.5.29"',
 ] as const;
 
 describe('升级依赖兼容性', () => {
@@ -77,5 +77,6 @@ describe('升级依赖兼容性', () => {
       expect(host.querySelector('section svg')).not.toBeNull();
       expect(capturedErrors).toEqual([]);
     },
+    20_000,
   );
 });

@@ -1,23 +1,25 @@
 import type { useDocumentSearchMatches } from './document-search-matches';
+import { advanceSearchOffset } from './search-pattern';
 import type { createPreviewSearchDom } from './preview-search-dom';
 import type { useDocumentSearchState } from './document-search-state';
 import type { useEditorHosts } from './editor-hosts';
+import type { useViewOptions } from '../settings/view-options';
 type UsePreviewSearchHighlightingDependencies =
   ReturnType<typeof useDocumentSearchMatches> &
   ReturnType<typeof createPreviewSearchDom> &
   ReturnType<typeof useDocumentSearchState> &
-  ReturnType<typeof useEditorHosts>;
+  ReturnType<typeof useEditorHosts> & Pick<ReturnType<typeof useViewOptions>, 'sourceMode'>;
 
 export function usePreviewSearchHighlighting(input: UsePreviewSearchHighlightingDependencies) {
   const { buildSearchRegExp,clearPreviewSearchHighlights,docSearchCaseSensitive,
     docSearchMatchIndex,docSearchQuery,docSearchWholeWord,normalizeSearchIndex,previewHost,
-    shouldSkipPreviewSearchHighlight,showDocSearchPanel,
+    shouldSkipPreviewSearchHighlight,showDocSearchPanel,sourceMode,
   } = input;
 
   function applyPreviewSearchHighlights() {
     const preview = previewHost.value;
     clearPreviewSearchHighlights();
-    if (!preview || !showDocSearchPanel.value) {
+    if (!preview || !showDocSearchPanel.value || sourceMode.value) {
       return;
     }
 
@@ -73,7 +75,7 @@ export function usePreviewSearchHighlighting(input: UsePreviewSearchHighlighting
         lastIndex = matchIndex + matchedText.length;
 
         if (matchedText.length === 0) {
-          localExpression.lastIndex += 1;
+          localExpression.lastIndex = advanceSearchOffset(value, localExpression.lastIndex);
         }
         match = localExpression.exec(value);
       }

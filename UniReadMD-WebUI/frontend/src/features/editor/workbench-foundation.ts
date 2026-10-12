@@ -4,6 +4,7 @@ import { useDocumentSearchState } from './document-search-state';
 import { useEditorHosts } from './editor-hosts';
 import { useWorkbenchStore } from './editor-store';
 import { createWorkbenchRuntime } from './workbench-runtime';
+import { useDocumentIntegrity } from '../workspace/document-integrity';
 
 export function useWorkbenchFoundation() {
   const runtime = createWorkbenchRuntime();
@@ -12,6 +13,7 @@ export function useWorkbenchFoundation() {
   const cursor = useCursorPosition();
   const hosts = useEditorHosts();
   const search = useDocumentSearchState();
+  const integrity = useDocumentIntegrity({ ...runtime, ...store, ...application });
 
   return {
     ...runtime,
@@ -20,5 +22,6 @@ export function useWorkbenchFoundation() {
     ...cursor,
     ...hosts,
     ...search,
+    ...integrity,
   };
 }

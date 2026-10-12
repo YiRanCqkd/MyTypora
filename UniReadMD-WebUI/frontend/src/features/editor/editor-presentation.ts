@@ -25,6 +25,7 @@ export function useEditorPresentation(input: EditorPresentationDependencies) {
   const matches = useDocumentSearchMatches(input.editor);
   const searchDom = createPreviewSearchDom(input.editor);
   const highlights = usePreviewSearchHighlighting({
+    ...input.settings,
     ...matches,
     ...searchDom,
     ...input.editor,

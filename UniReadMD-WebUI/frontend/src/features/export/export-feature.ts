@@ -5,9 +5,11 @@ import type { useWorkspacePresentation } from '../workspace/workspace-presentati
 import { useDocumentExport } from './export-document';
 import type { useExportFoundation } from './export-foundation';
 import { useExportCapabilities } from './export-capabilities';
+import type { useDiagramFeature } from '../markdown/diagram-feature';
 
 type ExportFeatureDependencies = Readonly<{
   editor: ReturnType<typeof useWorkbenchFoundation>;
+  diagrams: ReturnType<typeof useDiagramFeature>;
   exportState: ReturnType<typeof useExportFoundation>;
   presentation: ReturnType<typeof useEditorPresentation>;
   workspaceActions: ReturnType<typeof useWorkspaceActions>;
@@ -17,6 +19,7 @@ type ExportFeatureDependencies = Readonly<{
 export function useExportFeature(input: ExportFeatureDependencies) {
   const document = useDocumentExport({
     ...input.editor,
+    ...input.diagrams,
     ...input.exportState,
     ...input.presentation,
     ...input.workspaceActions,

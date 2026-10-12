@@ -12,6 +12,10 @@ function createIpcController(options) {
     runtime,
     settings,
     spell,
+    sessions,
+    workspaceTools,
+    images,
+    validateSender,
   } = options;
 
   function getEventWindow(event) {
@@ -22,6 +26,7 @@ function createIpcController(options) {
     ipcMain.handle(channel, async (event, payload = {}) => {
       const traceId = runtime.normalizeTraceId(payload?.traceId);
       try {
+        if (validateSender) validateSender(event);
         return await handler(event, payload, traceId);
       } catch (error) {
         runtime.log('error', `ipc failed: ${channel}`, traceId, {
@@ -63,9 +68,35 @@ function createIpcController(options) {
     register('file:openFromPath', files.openFromPath);
     register('file:listMarkdownInDirectory', files.listMarkdownInDirectory);
     register('file:saveMarkdown', files.saveMarkdown);
+    if (files.openDirectory) register('file:openDirectory', files.openDirectory);
+    if (files.searchDirectory) register('file:searchDirectory', files.searchDirectory);
+    if (workspaceTools) {
+      register('file:openDroppedFile', workspaceTools.openDroppedFile);
+      register('file:openLinkedFile', workspaceTools.openLinkedFile);
+      register('file:operate', workspaceTools.operate);
+      register('file:chooseMoveDirectory', workspaceTools.chooseMoveDirectory);
+      register('file:inspect', workspaceTools.inspect);
+    }
+    if (images) {
+      register('image:select', images.select);
+      register('image:paste', images.paste);
+      register('image:setRoot', images.setRoot);
+      register('image:drop', images.drop);
+      register('image:applyRoot', images.applyRoot);
+      if (images.collect) register('image:collect', images.collect);
+    }
+    if (sessions) {
+      register('session:load', sessions.load);
+      register('session:save', sessions.save);
+      register('document:confirmDiscard', sessions.confirmDiscard);
+      if (sessions.listDrafts) register('session:listDrafts', sessions.listDrafts);
+      if (sessions.restoreDraft) register('session:restoreDraft', sessions.restoreDraft);
+    }
     register('export:html', exporters.exportHtml);
     register('export:document', exporters.exportDocument);
     register('export:getCapabilities', exporters.getCapabilities);
+    if (exporters.importDocument) register('export:importDocument', exporters.importDocument);
+    if (exporters.chooseResource) register('export:chooseResource', exporters.chooseResource);
     register('window:minimize', async (event, payload, traceId) => {
       windowAction(event, payload, traceId, (win) => win.minimize());
       return { ok: true };
@@ -83,7 +114,10 @@ function createIpcController(options) {
       return { isMaximized };
     });
     register('window:close', async (event, payload, traceId) => {
-      windowAction(event, payload, traceId, (win) => win.close());
+      windowAction(event, payload, traceId, (win) => {
+        win.unireadmdAllowClose = true;
+        win.close();
+      });
       return { ok: true };
     });
     register('window:toggleDevTools', async (event, payload, traceId) => {
@@ -99,6 +133,7 @@ function createIpcController(options) {
     register('settings:set', settings.set);
     register('settings:setRecentFiles', settings.setRecentFiles);
     register('settings:selectUserCssFile', settings.selectUserCssFile);
+    if (settings.getUserCss) register('settings:getUserCss', settings.getUserCss);
     register('context:showFileTreeMenu', contextMenus.showFileTreeMenu);
     register('context:showSourceEditorMenu', contextMenus.showSourceEditorMenu);
     register('spell:getState', spell.getState);

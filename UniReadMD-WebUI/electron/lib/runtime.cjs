@@ -65,8 +65,23 @@ function createRuntime(options) {
         child.kill('SIGKILL');
         reject(new Error(`${command} timeout after ${timeoutMs}ms`));
       }), timeoutMs);
-      child.stdout.on('data', (chunk) => { stdout += String(chunk || ''); });
-      child.stderr.on('data', (chunk) => { stderr += String(chunk || ''); });
+      let outputBytes = 0;
+      const collect = (chunk, errorOutput = false) => {
+        if (settled) return;
+        outputBytes += Buffer.byteLength(chunk);
+        if (outputBytes > 64 * 1024 * 1024) {
+          finish(() => {
+            clearTimeout(timer);
+            child.kill('SIGKILL');
+            reject(new Error(`${command} 输出超过大小限制`));
+          });
+          return;
+        }
+        if (errorOutput) stderr += String(chunk);
+        else stdout += String(chunk);
+      };
+      child.stdout.on('data', (chunk) => collect(chunk));
+      child.stderr.on('data', (chunk) => collect(chunk, true));
       child.once('error', (error) => finish(() => {
         clearTimeout(timer);
         reject(error);

@@ -6,17 +6,21 @@ import type { useApplicationStatus } from '../editor/application-status';
 import type { useDocumentLoadingState } from './document-loading-state';
 import type { useFileTreeActions } from './file-tree-actions';
 import type { createWorkbenchRuntime } from '../editor/workbench-runtime';
+import type { useWorkbenchStore } from '../editor/editor-store';
 type UseFileDropDependencies =
   ReturnType<typeof useWorkspaceState> &
   ReturnType<typeof createFilePathModel> &
   ReturnType<typeof useApplicationStatus> &
   ReturnType<typeof useDocumentLoadingState> &
   ReturnType<typeof useFileTreeActions> &
-  ReturnType<typeof createWorkbenchRuntime>;
+  ReturnType<typeof createWorkbenchRuntime> &
+  ReturnType<typeof useWorkbenchStore>;
 
 export function useFileDrop(input: UseFileDropDependencies) {
   const { currentDirectoryMarkdownFiles,currentDirectoryPath,dedupeMarkdownPaths,errorMessage,
     getParentPath,isDragOverFile,isFileDragEvent,isMarkdownPath,openRecentFile,runtime,
+    workspaceDirectory,fileModifiedTimes,
+    workspaceDirectories,store,runDocumentLoadingTask,
   } = input;
 
   function parseFileUriToPath(value: string) {
@@ -117,6 +121,18 @@ export function useFileDrop(input: UseFileDropDependencies) {
     event.preventDefault();
     runtime.fileDragDepth = 0;
     isDragOverFile.value = false;
+    const dropped = [...(event.dataTransfer?.files || [])]
+      .find((file) => /\.(md|markdown)$/i.test(file.name));
+    if (dropped && window.nativeBridge.file.openDroppedFile) {
+      // 先消费真实拖放能力，再等待脏文档对话框，避免能力在等待期间过期。
+      const opening = window.nativeBridge.file.openDroppedFile(dropped);
+      // 给读取 Promise 立即安装拒绝处理，用户在确认框停留时不产生未处理异常。
+      void opening.catch(() => {});
+      void runDocumentLoadingTask('拖放打开文档', () => opening).then((result) => {
+        if (result) store.setFile(result.filePath, result.content, result);
+      });
+      return;
+    }
 
     const filePath = resolveDroppedMarkdownPath(event);
     if (!filePath) {
@@ -128,6 +144,18 @@ export function useFileDrop(input: UseFileDropDependencies) {
   }
 
   async function refreshCurrentDirectoryFiles(filePath: string) {
+    if (workspaceDirectory.value && window.nativeBridge.file.openDirectory) {
+      const result = await window.nativeBridge.file.openDirectory({
+        directoryPath: workspaceDirectory.value,
+      }).catch(() => null);
+      if (result && result.directoryPath === workspaceDirectory.value) {
+        currentDirectoryPath.value = result.directoryPath;
+        currentDirectoryMarkdownFiles.value = result.filePaths;
+        fileModifiedTimes.value = result.modifiedTimes || {};
+        workspaceDirectories.value = result.directories || [];
+      }
+      return;
+    }
     if (!filePath) {
       currentDirectoryPath.value = '';
       currentDirectoryMarkdownFiles.value = [];
@@ -140,6 +168,8 @@ export function useFileDrop(input: UseFileDropDependencies) {
       const traceId = createTraceId('list-dir');
       const result = await bridgeService.listMarkdownInDirectory(filePath, traceId);
       currentDirectoryPath.value = result.directoryPath;
+      fileModifiedTimes.value = result.modifiedTimes || {};
+      workspaceDirectories.value = result.directories || [];
       currentDirectoryMarkdownFiles.value = dedupeMarkdownPaths([
         ...result.filePaths,
         ...fallbackPath,

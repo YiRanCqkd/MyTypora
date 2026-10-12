@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it';
+import { sanitizeMarkdownHtml } from './safe-html';
 import type { createMarkdownRenderer } from './renderer';
 import type { usePreviewEditingState } from '../editor/preview-editing-state';
 import type { createWorkbenchRuntime } from '../editor/workbench-runtime';
@@ -12,7 +13,7 @@ export function createDiagramRenderer(input: CreateDiagramRendererDependencies) 
   } = input;
 
   async function ensureMathPluginLoaded() {
-    if (mathPluginRevision.value > 0) {
+    if (runtime.mathPluginInstalled) {
       return;
     }
 
@@ -25,6 +26,7 @@ export function createDiagramRenderer(input: CreateDiagramRendererDependencies) 
       .then((module) => {
         const plugin = (module.default ?? module) as (instance: MarkdownIt) => void;
         markdown.use(plugin);
+        runtime.mathPluginInstalled = true;
         mathPluginRevision.value += 1;
       })
       .finally(() => {
@@ -48,7 +50,13 @@ export function createDiagramRenderer(input: CreateDiagramRendererDependencies) 
       .then((module) => {
         const api = module.default;
         runtime.mermaidApi = {
-          initialize: api.initialize.bind(api),
+          initialize: (config) => api.initialize({
+            ...config,
+            // 新版节点读取全局配置；SVG 文字可安全保留在预览及导出中。
+            htmlLabels: false,
+            // 沿用库的默认保护项，文档指令也不能将标签改回会被过滤的 HTML。
+            secure: [...(api.mermaidAPI.defaultConfig.secure || []), 'htmlLabels'],
+          }),
           render: api.render.bind(api),
         };
       })
@@ -131,7 +139,7 @@ export function createDiagramRenderer(input: CreateDiagramRendererDependencies) 
     runtime.mermaidRenderSeed += 1;
     const renderId = `unireadmd-mermaid-${runtime.mermaidRenderSeed}`;
     const result = await mermaid.render(renderId, source);
-    outputNode.innerHTML = result.svg;
+    outputNode.innerHTML = sanitizeMarkdownHtml(result.svg, { diagramStyles: true });
   }
 
   function renderFlowSource(
@@ -148,6 +156,7 @@ export function createDiagramRenderer(input: CreateDiagramRendererDependencies) 
       'yes-text': 'yes',
       'no-text': 'no',
     });
+    outputNode.innerHTML = sanitizeMarkdownHtml(outputNode.innerHTML);
   }
 
   return { ensureMathPluginLoaded,ensureMermaidLoaded,ensureFlowchartLoaded,

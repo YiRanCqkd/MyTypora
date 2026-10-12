@@ -32,7 +32,8 @@ Git 仅使用 `D:\Program Files\Git\cmd\git.exe`，OpenSpec 仅通过固定 CLI 
 ### Security Boundary
 - DOMPurify 固定 HTML 白名单、属性白名单和协议白名单。
 - Mermaid 使用 strict security level，输出 SVG 再净化，禁止 `foreignObject`。
-- CSP 固定为最小应用 origin、data/blob 图片、内联样式和无外部连接能力。
+- CSP 限定应用脚本与连接为自身 origin；允许受限本地图片、data 与 HTTP(S) 图片，
+  字体仅来自自身或 data，禁止对象和子框架；内联样式用于公式与图表。
 - BrowserWindow 固定 `contextIsolation:true`、`nodeIntegration:false`、`sandbox:true` 和
   `webSecurity:true`。
 - `will-navigate` 和 `setWindowOpenHandler` 拒绝非应用 origin；合法外链交给系统浏览器。
@@ -42,7 +43,8 @@ Git 仅使用 `D:\Program Files\Git\cmd\git.exe`，OpenSpec 仅通过固定 CLI 
 ### Document Integrity
 - 每次打开、新建、切换、关闭、外部启动和第二实例接管前检查 dirty 状态。
 - Save/Discard/Cancel 必须稳定返回，并记录非敏感 trace id。
-- 会话快照限制为 5 MiB；文档读写和导出分别执行计划中的 20 MiB 边界。
+- 会话快照限制为 25 MiB，以容纳 20 MiB 文档及 JSON 转义和状态字段；文档读写和导出
+  分别执行 20 MiB 边界。旧的 5 MiB 快照上限不足以保护已经允许打开的大文档。
 - 自动保存默认关闭，启用后使用原子写入和失败恢复提示。
 
 ### Workspace and Typora-Style Editing

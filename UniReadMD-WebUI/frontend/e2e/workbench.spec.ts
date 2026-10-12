@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { validateMarkdownSyntax } from '../src/utils/markdown';
 
 test.describe('UniReadMD workbench', () => {
@@ -75,7 +75,7 @@ test.describe('UniReadMD workbench', () => {
       return !node.dispatchEvent(event);
     });
     expect(plainClickCancelled).toBe(true);
-    await expect(page.getByTestId('preview-inline-editor')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: '原位可视编辑' })).toBeVisible();
 
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('preview-inline-editor')).toHaveCount(0);
@@ -408,10 +408,12 @@ test.describe('UniReadMD workbench', () => {
     await page.mouse.move(targetX, startY, { steps: 14 });
     await page.mouse.up();
 
+    const expectedWidth = (before?.width ?? 0) + 120;
+    // 等待宽度过渡完成，避免把动画中间帧当作最终保存的布局。
     await expect.poll(async () => {
       const box = await sidebar.boundingBox();
-      return box?.width ?? 0;
-    }).toBeGreaterThan((before?.width ?? 0) + 70);
+      return Math.abs((box?.width ?? 0) - expectedWidth);
+    }).toBeLessThan(1);
 
     const afterResize = await sidebar.boundingBox();
     const resizedWidth = afterResize?.width ?? 0;
@@ -421,12 +423,12 @@ test.describe('UniReadMD workbench', () => {
 
     await expect.poll(async () => {
       const box = await sidebar.boundingBox();
-      return box?.width ?? 0;
-    }).toBeGreaterThan((before?.width ?? 0) + 70);
+      return Math.abs((box?.width ?? 0) - resizedWidth);
+    }).toBeLessThan(1);
 
     const afterReload = await sidebar.boundingBox();
     const reloadWidth = afterReload?.width ?? 0;
-    expect(Math.abs(reloadWidth - resizedWidth)).toBeLessThan(24);
+    expect(Math.abs(reloadWidth - resizedWidth)).toBeLessThan(1);
   });
 
   test('Files 视图应默认展示树并支持按文档名搜索', async ({ page }) => {
@@ -482,7 +484,7 @@ test.describe('UniReadMD workbench', () => {
 
     await page.getByTestId('doc-search-query').fill('foo');
     await expect(page.getByTestId('doc-search-summary')).toContainText('1/3');
-    await page.getByRole('button', { name: '↓' }).click();
+    await page.getByRole('button', { name: '下一个匹配' }).click();
     await expect(page.getByTestId('doc-search-summary')).toContainText('2/3');
 
     await page.getByTestId('doc-open-replace').click();
@@ -540,7 +542,7 @@ test.describe('UniReadMD workbench', () => {
     await page.locator('#toggle-sourceview-btn').click();
     await expect(page.getByTestId('editor-host')).not.toBeVisible();
 
-    await page.locator('.preview p').first().click();
+    await page.locator('.preview p').first().click({ modifiers: ['Alt'] });
     const inlineEditor = page.getByTestId('preview-inline-editor');
     const textarea = inlineEditor.locator('textarea');
     await expect(inlineEditor).toBeVisible();
@@ -592,7 +594,7 @@ test.describe('UniReadMD workbench', () => {
     await expect(page.getByTestId('editor-host')).not.toBeVisible();
 
     const paragraph = page.locator('.preview p').first();
-    await paragraph.click();
+    await paragraph.click({ modifiers: ['Alt'] });
 
     const inlineEditor = page.getByTestId('preview-inline-editor');
     await expect(inlineEditor).toBeVisible();
@@ -621,19 +623,28 @@ test.describe('UniReadMD workbench', () => {
     await expect(page.getByTestId('editor-host')).not.toBeVisible();
 
     const paragraph = page.locator('.preview p').first();
-    await paragraph.click();
+    await paragraph.click({ modifiers: ['Alt'] });
 
     const inlineEditor = page.getByTestId('preview-inline-editor');
     await expect(inlineEditor).toBeVisible();
     const textarea = inlineEditor.locator('textarea');
     await textarea.fill('## live heading');
 
-    await expect(page.locator('.preview h2', {
-      hasText: 'live heading',
-    })).toBeVisible();
+    // 映射标题隐藏占位，可见编辑框继承新标题排版，避免重复显示同一份正文。
+    const liveHeading = page.locator('.preview h2');
+    await expect(liveHeading).toHaveText('live heading');
+    await expect(liveHeading).toBeHidden();
+    const typography = await liveHeading.evaluate((node) => ({
+      size: getComputedStyle(node).fontSize,
+      height: getComputedStyle(node).lineHeight,
+    }));
+    await expect(textarea).toBeVisible();
+    await expect(textarea).toHaveCSS('font-size', typography.size);
+    await expect(textarea).toHaveCSS('line-height', typography.height);
 
     await textarea.press('Escape');
     await expect(inlineEditor).toHaveCount(0);
+    await expect(page.locator('.preview p').first()).toBeVisible();
     await expect(page.locator('.preview p').first()).toContainText('draft paragraph');
     await expect(page.locator('.preview h2', {
       hasText: 'live heading',
@@ -657,7 +668,7 @@ test.describe('UniReadMD workbench', () => {
     await page.locator('#toggle-sourceview-btn').click();
     await expect(page.getByTestId('editor-host')).not.toBeVisible();
 
-    await page.locator('.preview p').first().click();
+    await page.locator('.preview p').first().click({ modifiers: ['Alt'] });
     const inlineEditor = page.getByTestId('preview-inline-editor');
     await expect(inlineEditor).toBeVisible();
     const textarea = inlineEditor.locator('textarea');
@@ -952,7 +963,7 @@ test.describe('UniReadMD workbench', () => {
 
     await page.locator('.preview p', {
       hasText: 'Paragraph before render edit.',
-    }).first().click();
+    }).first().click({ modifiers: ['Alt'] });
     const inlineEditor = page.getByTestId('preview-inline-editor');
     const textarea = inlineEditor.locator('textarea');
     await expect(inlineEditor).toBeVisible();
@@ -1079,6 +1090,9 @@ test.describe('UniReadMD workbench', () => {
       timeout: 20000,
     }).toBeGreaterThan(2);
     await expect(preview.locator('.mermaid-block .mermaid-error:visible')).toHaveCount(0);
+    const graphBox = preview.locator('.mermaid-block').first().locator('.node rect').first();
+    await expect.poll(async () => graphBox.evaluate((node) => getComputedStyle(node).fill))
+      .not.toBe('rgb(0, 0, 0)');
   });
 
   test('Source/Focus/Typewriter 模式应支持切换与会话恢复', async ({ page }) => {
@@ -1111,8 +1125,9 @@ test.describe('UniReadMD workbench', () => {
     await expect(previewHost).not.toBeVisible();
     await expect(editorHost).toBeVisible();
     await expect(mainResizer).not.toBeVisible();
-    await expect(outlineBtn).not.toBeVisible();
-    await expect(statusRight).not.toBeVisible();
+    await expect(outlineBtn).toBeVisible();
+    await expect(statusRight).toBeVisible();
+    await expect(page.locator('#footer-word-count')).toBeVisible();
 
     await expect.poll(async () => {
       const box = await topTitlebar.boundingBox();
@@ -1132,10 +1147,10 @@ test.describe('UniReadMD workbench', () => {
 
     await page.reload();
 
-    await expect(layout).not.toHaveClass(/typora-sourceview-on/);
+    await expect(layout).toHaveClass(/typora-sourceview-on/);
     await expect(layout).toHaveClass(/on-focus-mode/);
     await expect(layout).toHaveClass(/ty-on-typewriter-mode/);
-    await expect(editorHost).not.toBeVisible();
+    await expect(editorHost).toBeVisible();
   });
 
   test('拼写检查状态应支持开关、语言选择与状态展示', async ({ page }) => {

@@ -48,6 +48,7 @@ export function useEditorDomain(resolve: ResolveWorkbenchDomains) {
     const domains = resolve();
     return usePreviewEditingEventsFeature({
       editor: foundation,
+      navigation: navigation(),
       presentation: presentation(),
       preview: preview(),
       settings: domains.settings.foundation(),
@@ -114,7 +115,7 @@ export function useEditorDomain(resolve: ResolveWorkbenchDomains) {
       lifecycle: {
         editor: {
           codeMirror: codeMirror(),commands: commands(),foundation,navigation: navigation(),
-          preview: preview(),
+          preview: preview(),table: table(),
         },
         export: domains.export.feature(),
         markdown: {

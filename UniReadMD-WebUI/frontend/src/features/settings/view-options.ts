@@ -2,6 +2,8 @@ import type { SpellDictionaryStatus } from './preferences-contracts';
 import { ref } from 'vue';
 
 export function useViewOptions() {
+  const documentToolsVisible = ref(false);
+  const preferencesVisible = ref(false);
   const isNativeWindow = ref(false);
 
   const pinOutline = ref(true);
@@ -22,7 +24,8 @@ export function useViewOptions() {
 
   const spellDictionaryStatus = ref<SpellDictionaryStatus>('ready');
 
-  return { isNativeWindow,pinOutline,sourceMode,focusMode,typewriterMode,
+  return { documentToolsVisible,preferencesVisible,isNativeWindow,pinOutline,
+    sourceMode,focusMode,typewriterMode,
     showSpellPanel,spellCheckEnabled,spellCheckLanguage,spellCheckLanguages,
     spellDictionaryStatus,
   };

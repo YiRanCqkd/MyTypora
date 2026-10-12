@@ -18,16 +18,10 @@ export type WorkbenchWatcherFeatures = Readonly<{
 }>;
 
 export function useWorkbenchWatchers(input: WorkbenchWatcherFeatures) {
-  const {
-    contentZoom,focusMode,pinOutline,sourceMode,typewriterMode,
-  } = input.settings.foundation;
-  const { docReplaceQuery,docSearchCaseSensitive,docSearchMatchIndex,docSearchQuery,
-    docSearchWholeWord,showDocReplacePanel,showDocSearchPanel,store,
+  const { docSearchCaseSensitive,docSearchMatchIndex,docSearchQuery,docSearchRegex,
+    docSearchWholeWord,showDocSearchPanel,store,
   } = input.editor.foundation;
   const { docSearchMatches } = input.editor.presentation;
-  const { fileSortMode,fileTreeExpanded,fileViewMode,filesFilter,mainPreviewWidth,recentFiles,
-    sidebarWidth } = input.workspace.foundation;
-  const { persistSessionSnapshot } = input.settings.session;
   const { selectDocMatch } = input.editor.commands;
   const { windowTitle } = input.workspace.presentation;
 
@@ -36,6 +30,7 @@ export function useWorkbenchWatchers(input: WorkbenchWatcherFeatures) {
       docSearchQuery.value,
       docSearchCaseSensitive.value,
       docSearchWholeWord.value,
+      docSearchRegex.value,
       store.content,
     ],
     () => {
@@ -71,37 +66,6 @@ export function useWorkbenchWatchers(input: WorkbenchWatcherFeatures) {
     },
     {
       immediate: true,
-    },
-  );
-
-  watch(
-    () => [
-      store.filePath,
-      store.content,
-      store.isDirty,
-      store.cursorHint,
-      recentFiles.value.join('\n'),
-      pinOutline.value,
-      sourceMode.value,
-      focusMode.value,
-      typewriterMode.value,
-      contentZoom.value,
-      sidebarWidth.value,
-      mainPreviewWidth.value,
-      fileViewMode.value,
-      fileSortMode.value,
-      filesFilter.value,
-      showDocSearchPanel.value,
-      showDocReplacePanel.value,
-      docSearchQuery.value,
-      docReplaceQuery.value,
-      docSearchCaseSensitive.value,
-      docSearchWholeWord.value,
-      docSearchMatchIndex.value,
-      JSON.stringify(fileTreeExpanded.value),
-    ],
-    () => {
-      persistSessionSnapshot();
     },
   );
 

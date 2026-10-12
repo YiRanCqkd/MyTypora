@@ -15,4 +15,8 @@ export const EXPORT_LABELS: Readonly<Record<ExportFormat, string>> = {
   docx: 'Word(docx)',
   odt: 'ODT',
   rtf: 'RTF',
+  epub: 'EPUB',
+  latex: 'LaTeX',
+  revealjs: 'RevealJS 幻灯片', mediawiki: 'MediaWiki', rst: 'reStructuredText',
+  textile: 'Textile', opml: 'OPML 大纲',
 };

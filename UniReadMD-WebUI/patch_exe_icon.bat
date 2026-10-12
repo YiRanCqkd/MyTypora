@@ -9,6 +9,12 @@ if "%TARGET_EXE%"=="" set "TARGET_EXE=%CD%\release\electron\win-unpacked\UniRead
 
 set "ICON_FILE=%CD%\res\unireadmd.ico"
 set "RCEDIT_EXE=%CD%\node_modules\electron-winstaller\vendor\rcedit.exe"
+set "NODE_EXE=D:\Program Files\nodejs\node.exe"
+set "WINDOWS_VERSION="
+for /f "delims=" %%V in ('""%NODE_EXE%" "%CD%\scripts\print_windows_version.mjs""') do (
+  set "WINDOWS_VERSION=%%V"
+)
+if "%WINDOWS_VERSION%"=="" exit /b 1
 
 if not exist "%RCEDIT_EXE%" (
   echo [ERROR] rcedit not found: "%RCEDIT_EXE%"
@@ -31,9 +37,11 @@ if not exist "%TARGET_EXE%" (
 
 "%RCEDIT_EXE%" "%TARGET_EXE%" --set-icon "%ICON_FILE%" ^
   --set-version-string ProductName UniReadMD ^
-  --set-version-string FileDescription UniReadMD ^
-  --set-version-string CompanyName UniReadMD ^
-  --set-version-string OriginalFilename UniReadMD.exe
+  --set-version-string FileDescription 联软MD文档阅读器 ^
+  --set-version-string CompanyName Leagsoft ^
+  --set-version-string OriginalFilename UniReadMD.exe ^
+  --set-file-version %WINDOWS_VERSION% ^
+  --set-product-version %WINDOWS_VERSION%
 
 if errorlevel 1 (
   echo [ERROR] patch failed.

@@ -1,4 +1,7 @@
 import { EditorState } from '@codemirror/state';
+import { clearPreviewEditingLayout, layoutPreviewEditor, revealPreviewEditorCaret }
+  from './preview-editor-layout';
+import { preservePreviewScroll } from './preview-editor-layout';
 import type { useCursorPosition } from './cursor-position';
 import type { useEditorHosts } from './editor-hosts';
 import type { usePreviewEditingState } from './preview-editing-state';
@@ -89,22 +92,18 @@ export function createPreviewEditingRanges(input: CreatePreviewEditingRangesDepe
       return null;
     }
 
-    const containerRect = container.getBoundingClientRect();
-    const previewRect = preview.getBoundingClientRect();
-    const targetRect = node.getBoundingClientRect();
-    const left = Math.max(targetRect.left, previewRect.left) - containerRect.left;
-    const top = targetRect.top - containerRect.top;
-    const availableWidth = Math.max(120, previewRect.right - containerRect.left - left - 2);
-    const targetWidth = Math.max(120, Math.round(targetRect.width) + 4);
-    const width = Math.min(targetWidth, availableWidth);
-    const minHeight = Math.max(24, Math.round(targetRect.height));
-
-    return {
-      left: `${left}px`,
-      top: `${top}px`,
-      width: `${width}px`,
-      minHeight: `${minHeight}px`,
-    };
+    // 清理旧占位再测量时，浏览器会把长文档滚动位置截回顶部；临时保留滚动空间。
+    const restoreScroll = preservePreviewScroll(preview);
+    let style: ReturnType<typeof layoutPreviewEditor>;
+    try {
+      if (input.previewInlineEditVisible.value) markPreviewEditingBlocks();
+      style = layoutPreviewEditor(container, preview, node, input.previewInlineEditTextarea.value,
+        Boolean(input.previewInlineEditSession.value?.fragment));
+    } finally {
+      restoreScroll();
+    }
+    style.top = `${node.getBoundingClientRect().top - container.getBoundingClientRect().top}px`;
+    return style;
   }
 
   function findPreviewInlineEditAnchorNode() {
@@ -118,7 +117,10 @@ export function createPreviewEditingRanges(input: CreatePreviewEditingRangesDepe
     const tokenSelector = `${startLineSelector}[data-source-token='${selection.token}']`;
     const tokenMatched = preview.querySelector<HTMLElement>(tokenSelector);
     if (tokenMatched) {
-      return tokenMatched;
+      const fragment = input.previewInlineEditSession.value?.fragment;
+      return fragment
+        ? tokenMatched.querySelectorAll<HTMLElement>(fragment.selector)[fragment.index] || null
+        : tokenMatched;
     }
 
     const startLineMatched = preview.querySelector<HTMLElement>(startLineSelector);
@@ -141,6 +143,30 @@ export function createPreviewEditingRanges(input: CreatePreviewEditingRangesDepe
     }) || null;
   }
 
+  function revealPreviewInlineEditorCaret() {
+    const preview = previewHost.value;
+    const textarea = input.previewInlineEditTextarea.value;
+    if (preview && textarea) {
+      revealPreviewEditorCaret(preview, textarea, findPreviewInlineEditAnchorNode());
+    }
+  }
+
+  function markPreviewEditingBlocks(clear = false) {
+    if (previewHost.value) clearPreviewEditingLayout(previewHost.value);
+    if (input.previewInlineEditSession.value?.fragment) {
+      if (!clear) findPreviewInlineEditAnchorNode()?.classList.add('preview-editing-fragment');
+      return;
+    }
+    const selection = previewInlineEditSelection.value;
+    const nodes = previewHost.value?.querySelectorAll<HTMLElement>('[data-source-start]') || [];
+    for (const node of nodes) {
+      const start = Number(node.dataset.sourceStart);
+      const end = Number(node.dataset.sourceEnd);
+      node.classList.toggle('preview-editing-block', !clear && Boolean(selection
+        && start >= selection.startLine && end <= selection.endLine));
+    }
+  }
+
 
   return {
     schedulePreviewScrollSync,
@@ -151,5 +177,7 @@ export function createPreviewEditingRanges(input: CreatePreviewEditingRangesDepe
     getPreviewInlineEditLineCount,
     buildPreviewInlineEditStyle,
     findPreviewInlineEditAnchorNode,
+    markPreviewEditingBlocks,
+    revealPreviewInlineEditorCaret,
   };
 }

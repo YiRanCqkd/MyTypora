@@ -5,6 +5,8 @@ export type FileViewMode = 'list' | 'tree';
 export type FileSortMode = 'natural' | 'name' | 'date';
 
 export interface SessionSnapshot {
+  workspaceDirectory?: string;
+  version?: string;
   filePath: string;
   content: string;
   isDirty: boolean;
@@ -26,6 +28,7 @@ export interface SessionSnapshot {
   replaceQuery?: string;
   searchCaseSensitive?: boolean;
   searchWholeWord?: boolean;
+  searchRegex?: boolean;
   searchMatchIndex?: number;
   fileTreeExpanded?: Record<string, boolean>;
 }

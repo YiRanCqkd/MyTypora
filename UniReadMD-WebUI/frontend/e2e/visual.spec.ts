@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 const SESSION_STORAGE_KEY = 'unireadmd.phase2.session.v1';
 
@@ -110,7 +110,7 @@ test.describe('visual baseline', () => {
     ].join('\n'));
     await page.locator('#toggle-sourceview-btn').click();
 
-    await page.locator('.preview p').first().dblclick();
+    await page.locator('.preview p').first().dblclick({ modifiers: ['Alt'] });
     await expect(page.getByTestId('preview-inline-editor')).toBeVisible();
 
     await expect(page.locator('.main')).toHaveScreenshot('main-preview-inline-editor.png', {
@@ -140,6 +140,11 @@ test.describe('visual baseline', () => {
       button: 'right',
     });
     await expect(page.getByTestId('preview-table-menu')).toBeVisible();
+    const containerBounds = await page.getByTestId('editor-preview').boundingBox();
+    const menuBounds = await page.getByTestId('preview-table-menu').boundingBox();
+    expect(containerBounds && menuBounds
+      && menuBounds.y + menuBounds.height <= containerBounds.y + containerBounds.height)
+      .toBe(true);
 
     await expect(page.locator('.main')).toHaveScreenshot('main-preview-table-menu.png', {
       animations: 'disabled',

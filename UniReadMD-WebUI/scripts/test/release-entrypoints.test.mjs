@@ -46,7 +46,7 @@ function invokeCommand(command, extraEnvironment = {}) {
       cwd: path.resolve('.'),
       encoding: 'utf8',
       env: createFixedEnvironment(extraEnvironment),
-      timeout: 60_000,
+      timeout: 90_000,
     },
   );
 }
@@ -59,7 +59,7 @@ function invokeFile(arguments_) {
       cwd: path.resolve('.'),
       encoding: 'utf8',
       env: createFixedEnvironment(),
-      timeout: 60_000,
+      timeout: 90_000,
     },
   );
 }

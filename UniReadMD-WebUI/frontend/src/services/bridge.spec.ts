@@ -63,6 +63,58 @@ function mockBridge() {
 }
 
 describe('bridgeService', () => {
+  it('能力与状态读取拒绝空对象，缺少可选列表按空列表处理', async () => {
+    const bridge = mockBridge();
+    bridge.exporter.getCapabilities.mockResolvedValue(null);
+    await expect(bridgeService.getExportCapabilities()).rejects.toThrow('返回非法数据');
+    bridge.settings.getRecentFiles.mockResolvedValue(null);
+    await expect(bridgeService.getRecentFiles()).rejects.toThrow('返回非法数据');
+    bridge.spell.getState.mockResolvedValue(null);
+    await expect(bridgeService.getSpellCheckState()).rejects.toThrow('返回非法数据');
+    bridge.settings.getAll.mockResolvedValue({});
+    await expect(bridgeService.getAllSettings()).rejects.toThrow('返回非法数据');
+    bridge.file.listMarkdownInDirectory.mockResolvedValue({
+      directoryPath: 'I:/', filePaths: null,
+    });
+    expect((await bridgeService.listMarkdownInDirectory('I:/a.md')).filePaths).toEqual([]);
+    bridge.spell.getState.mockResolvedValue({ enabled: true, language: 'zh-CN',
+      availableLanguages: null,
+    });
+    expect((await bridgeService.getSpellCheckState()).availableLanguages).toEqual([]);
+    bridge.exporter.exportHtml.mockResolvedValue(null);
+    expect(await bridgeService.exportHtml({ html: '' })).toBeNull();
+    bridge.app.consumeLaunchFilePath.mockResolvedValue(null);
+    expect(await bridgeService.consumeLaunchFilePath()).toBeNull();
+  });
+  it('打开和保存保留资源能力与版本，目录返回修改时间', async () => {
+    const bridge = mockBridge();
+    const metadata = { resourceBaseUrl: 'http://127.0.0.1:1234/resource?path=', version: 'v1' };
+    bridge.file.openMarkdown.mockResolvedValue({ filePath: 'I:/文档.md', content: '# 标题',
+      ...metadata,
+    });
+    bridge.file.saveMarkdown.mockResolvedValue({ filePath: 'I:/文档.md', ...metadata });
+    bridge.file.listMarkdownInDirectory.mockResolvedValue({ directoryPath: 'I:/',
+      filePaths: ['I:/文档.md'], modifiedTimes: { 'I:/文档.md': 123 },
+    });
+    expect(await bridgeService.openMarkdown()).toMatchObject(metadata);
+    expect(await bridgeService.saveMarkdown({ content: '# 标题' })).toMatchObject(metadata);
+    expect((await bridgeService.listMarkdownInDirectory('I:/文档.md')).modifiedTimes)
+      .toEqual({ 'I:/文档.md': 123 });
+  });
+
+  it('空或非法原生结果不能被当成打开、保存、列目录成功', async () => {
+    const bridge = mockBridge();
+    bridge.file.openFromPath.mockResolvedValue(undefined);
+    await expect(bridgeService.openFromPath('I:/a.md')).rejects.toThrow('返回非法数据');
+    bridge.file.saveMarkdown.mockResolvedValue(undefined);
+    await expect(bridgeService.saveMarkdown({ content: '' })).rejects.toThrow('返回非法数据');
+    bridge.file.listMarkdownInDirectory.mockResolvedValue(undefined);
+    await expect(bridgeService.listMarkdownInDirectory('I:/a.md')).rejects.toThrow('返回非法数据');
+    bridge.file.openFromPath.mockResolvedValue({ filePath: 'I:/a.md', content: 123 });
+    await expect(bridgeService.openFromPath('I:/a.md')).rejects.toThrow('content');
+    bridge.file.saveMarkdown.mockResolvedValue(null);
+    expect(await bridgeService.saveMarkdown({ content: '' })).toBeNull();
+  });
   afterEach(() => {
     vi.restoreAllMocks();
   });

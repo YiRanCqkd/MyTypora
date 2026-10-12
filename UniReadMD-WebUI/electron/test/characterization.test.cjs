@@ -175,7 +175,9 @@ test('导出适配器保留参数转换、HTML 落盘和返回结构', async () 
       format: 'html',
       engine: 'builtin',
     });
-    assert.equal(await fsPromises.readFile(targetPath, 'utf8'), '<h1>标题</h1>');
+    const exportedHtml = await fsPromises.readFile(targetPath, 'utf8');
+    assert.match(exportedHtml, /<h1>标题<\/h1>/);
+    assert.match(exportedHtml, /Content-Security-Policy/);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
@@ -194,9 +196,12 @@ test('菜单模型保留标签、快捷键和渲染器命令合同', () => {
   assert.equal(fileMenu.submenu[0].accelerator, 'CmdOrCtrl+O');
   assert.deepEqual(
     exportMenu.submenu.filter((item) => item.label).map((item) => item.label),
-    ['导出 HTML...', '导出 PDF...', '导出 PNG...', '导出 JPEG...', '导出 Word (docx)...'],
+    ['导出 HTML...', '导出 PDF...', '导出 PNG...', '导出 JPEG...', '导出 Word (docx)...',
+      '导出 OpenDocument (odt)...', '导出 RTF...'],
   );
   fileMenu.submenu[0].click();
   editMenu.submenu.find((item) => item.label === '查找').click();
-  assert.deepEqual(commands, ['file-open', 'edit-search']);
+  exportMenu.submenu.find((item) => item.label === '导出 OpenDocument (odt)...').click();
+  exportMenu.submenu.find((item) => item.label === '导出 RTF...').click();
+  assert.deepEqual(commands, ['file-open', 'edit-search', 'file-export-odt', 'file-export-rtf']);
 });

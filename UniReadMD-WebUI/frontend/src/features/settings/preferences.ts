@@ -17,7 +17,9 @@ export function usePreferences(input: UsePreferencesDependencies) {
   const userCssEnabled = ref(false);
 
   const userCssPath = ref('');
+  const autoSave = ref(false);
+  const autoSaveInterval = ref(300);
 
-  return { theme,fontSize,contentZoom,userCssEnabled,userCssPath,
+  return { theme,fontSize,contentZoom,userCssEnabled,userCssPath,autoSave,autoSaveInterval,
   };
 }

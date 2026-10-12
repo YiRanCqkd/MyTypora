@@ -6,6 +6,7 @@ export default defineConfig({
     vue(),
   ],
   test: {
+    maxWorkers: 2,
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.spec.ts'],

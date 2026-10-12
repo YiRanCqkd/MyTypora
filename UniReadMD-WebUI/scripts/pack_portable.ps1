@@ -1,6 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$packageVersion = (Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw |
+  ConvertFrom-Json).version
+$windowsVersion = $packageVersion + '.0'
 $stageOutputName = 'electron-stage-' + [guid]::NewGuid().ToString('N')
 $portableOutputName = 'electron-portable-' + [guid]::NewGuid().ToString('N')
 $stageOutputDir = Join-Path $projectRoot ('release\' + $stageOutputName)
@@ -35,9 +38,11 @@ try {
   & $rcedit $innerExe `
     --set-icon $sourceIcon `
     --set-version-string ProductName UniReadMD `
-    --set-version-string FileDescription UniReadMD `
-    --set-version-string CompanyName UniReadMD `
-    --set-version-string OriginalFilename UniReadMD.exe
+    --set-version-string FileDescription 联软MD文档阅读器 `
+    --set-version-string CompanyName Leagsoft `
+    --set-version-string OriginalFilename UniReadMD.exe `
+    --set-file-version $windowsVersion `
+    --set-product-version $windowsVersion
   if ($LASTEXITCODE -ne 0) {
     throw 'Failed to patch icon for unpacked app executable.'
   }

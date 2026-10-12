@@ -11,7 +11,9 @@ import type { useRecentFiles } from '../workspace/recent-files';
 import type { useTaskRunner } from '../workspace/task-runner';
 import type { createWorkbenchRuntime } from '../editor/workbench-runtime';
 import type { useWorkbenchStore } from '../editor/editor-store';
+import type { useApplicationStatus } from '../editor/application-status';
 type UseSessionPersistenceDependencies =
+  ReturnType<typeof useApplicationStatus> &
   ReturnType<typeof createMarkdownRenderer> &
   ReturnType<typeof usePreferences> &
   ReturnType<typeof useDocumentSearchState> &
@@ -24,39 +26,28 @@ type UseSessionPersistenceDependencies =
   ReturnType<typeof useWorkbenchStore>;
 
 export function useSessionPersistence(input: UseSessionPersistenceDependencies) {
+  let pendingSnapshot: SessionSnapshot | null = null;
+  let pendingWrite: Promise<void> | null = null;
   const { SESSION_STORAGE_KEY,contentZoom,docReplaceQuery,docSearchCaseSensitive,
     docSearchMatchIndex,docSearchQuery,docSearchWholeWord,fileSortMode,fileTreeExpanded,
     fileViewMode,filesFilter,focusMode,isNativeWindow,mainPreviewWidth,normalizeRecentFiles,
-    pinOutline,recentFiles,runTask,runtime,showDocReplacePanel,showDocSearchPanel,sidebarWidth,
-    sourceMode,store,typewriterMode,userCssEnabled,userCssPath,
+    pinOutline,recentFiles,runtime,showDocReplacePanel,showDocSearchPanel,sidebarWidth,
+    sourceMode,store,typewriterMode,
+    workspaceDirectory,
+    docSearchRegex,
+    errorMessage,
   } = input;
-
-  async function normalizeLegacyUserCssSettings() {
-    if (!userCssEnabled.value && !userCssPath.value) {
-      return;
-    }
-
-    await runTask('settings-usercss-disable', async (traceId) => {
-      await bridgeService.setSetting('userCssEnabled', false, traceId);
-      await bridgeService.setSetting('userCssPath', '', traceId);
-      return {
-        ok: true,
-      };
-    }, {
-      fallbackHint: '若样式仍异常，请删除用户目录中的 settings.json 后重启。',
-    });
-
-    userCssEnabled.value = false;
-    userCssPath.value = '';
-  }
 
   function buildSessionSnapshot(): SessionSnapshot {
     return {
       filePath: store.filePath,
+      workspaceDirectory: workspaceDirectory.value,
+      version: store.version,
       content: store.content,
       isDirty: store.isDirty,
       cursorHint: store.cursorHint,
-      recentFiles: recentFiles.value,
+      // IPC 只接收普通数据，同时避免排队快照随响应式状态继续变化。
+      recentFiles: [...recentFiles.value],
       contentZoom: contentZoom.value,
       pinOutline: pinOutline.value,
       sourceMode: sourceMode.value,
@@ -73,14 +64,34 @@ export function useSessionPersistence(input: UseSessionPersistenceDependencies) 
       replaceQuery: docReplaceQuery.value,
       searchCaseSensitive: docSearchCaseSensitive.value,
       searchWholeWord: docSearchWholeWord.value,
+      searchRegex: docSearchRegex?.value || false,
       searchMatchIndex: docSearchMatchIndex.value,
-      fileTreeExpanded: fileTreeExpanded.value,
+      fileTreeExpanded: { ...fileTreeExpanded.value },
     };
   }
 
   function persistSessionSnapshot() {
     const snapshot = buildSessionSnapshot();
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(snapshot));
+    if (window.nativeBridge?.session) {
+      pendingSnapshot = snapshot;
+      if (!pendingWrite) {
+        pendingWrite = (async () => {
+          while (pendingSnapshot) {
+            const current = pendingSnapshot;
+            pendingSnapshot = null;
+            await window.nativeBridge.session?.save(current);
+          }
+        })().catch((error) => {
+          errorMessage.value = `恢复快照保存失败，请手动保存文档：${String(error)}`;
+        }).finally(() => { pendingWrite = null; });
+      }
+      return pendingWrite;
+    }
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(snapshot));
+    } catch (error) {
+      errorMessage.value = `恢复快照超过浏览器存储限制，请保存文档：${String(error)}`;
+    }
   }
 
   function pushRecentFile(filePath: string) {
@@ -110,7 +121,11 @@ export function useSessionPersistence(input: UseSessionPersistenceDependencies) 
     persistSessionSnapshot();
   }
 
-  function loadSessionSnapshot() {
+  async function loadSessionSnapshot() {
+    if (window.nativeBridge?.session) {
+      const snapshot = await window.nativeBridge.session.load();
+      return snapshot as SessionSnapshot | null;
+    }
     const raw = localStorage.getItem(SESSION_STORAGE_KEY);
     if (!raw) {
       return null;
@@ -169,7 +184,7 @@ export function useSessionPersistence(input: UseSessionPersistenceDependencies) 
     runtime.contentZoomPersistTimer = 0;
   }
 
-  return { normalizeLegacyUserCssSettings,buildSessionSnapshot,persistSessionSnapshot,
+  return { buildSessionSnapshot,persistSessionSnapshot,
     pushRecentFile,loadSessionSnapshot,loadRecentFilesFromNative,clearContentZoomPersistTimer,
   };
 }

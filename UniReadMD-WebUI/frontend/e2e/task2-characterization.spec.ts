@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 const SCREENSHOT_VIEWPORTS = [375, 768, 1280] as const;
 
