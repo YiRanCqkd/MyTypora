@@ -1,4 +1,6 @@
 import { bridgeService } from '../../services/bridge';
+import { nextTick, onBeforeUnmount, onMounted } from 'vue';
+import { measuredContextMenuStyle } from '../workspace/context-menu-position';
 import type { useTableActions } from './table-actions';
 import type { usePreviewEditingSession } from './preview-editing-session';
 import type { useTableCellEditing } from './table-cell-editing';
@@ -134,13 +136,39 @@ export function useTableEditingEvents(input: UseTableEditingEventsDependencies) 
       return;
     }
 
-    const containerRect = container.getBoundingClientRect();
     sourceContextMenuStyle.value = {
-      left: `${event.clientX - containerRect.left}px`,
-      top: `${event.clientY - containerRect.top}px`,
+      left: `${event.clientX}px`, top: `${event.clientY}px`, visibility: 'hidden',
     };
     sourceContextMenuVisible.value = true;
+    await nextTick();
+    const menu = document.querySelector<HTMLElement>('.source-context-menu');
+    if (menu && sourceContextMenuVisible.value) {
+      sourceContextMenuStyle.value = measuredContextMenuStyle(menu, event);
+      await nextTick();
+      if (sourceContextMenuVisible.value) {
+        menu.querySelector('button')?.focus({ preventScroll: true });
+      }
+    }
   }
+
+  function dismissMenus(event: Event) {
+    if (event.target instanceof Element
+      && event.target.closest('.preview-table-menu, .source-context-menu')) return;
+    closePreviewTableMenu();
+    closeSourceContextMenu();
+  }
+  onMounted(() => {
+    document.addEventListener('scroll', dismissMenus, true);
+    document.addEventListener('wheel', dismissMenus, true);
+    window.addEventListener('blur', dismissMenus);
+    window.addEventListener('resize', dismissMenus);
+  });
+  onBeforeUnmount(() => {
+    document.removeEventListener('scroll', dismissMenus, true);
+    document.removeEventListener('wheel', dismissMenus, true);
+    window.removeEventListener('blur', dismissMenus);
+    window.removeEventListener('resize', dismissMenus);
+  });
 
   return { handlePreviewTableCellEditKeydown,handleSourceContextMenu,
   };

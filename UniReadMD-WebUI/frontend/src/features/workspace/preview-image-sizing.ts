@@ -3,12 +3,13 @@ import { Transaction } from '@codemirror/state';
 import type { WorkbenchDomains } from '../editor/workbench-domains';
 import { findPreviewImageSource, buildImageResizeSource } from '../editor/image-sizing';
 import type { ImageSource } from '../editor/image-sizing';
+import { measuredContextMenuStyle } from './context-menu-position';
 
 export function usePreviewImageSizing(domains: WorkbenchDomains) {
   const { store, runtime, previewHost, errorMessage } = domains.editor.foundation;
   const sourceMode = domains.settings.foundation().sourceMode;
   const imageMenu = ref(false);
-  const imageMenuPosition = ref({ left: '0px', top: '0px' });
+  const imageMenuPosition = ref<Record<string, string>>({ left: '0px', top: '0px' });
   const imagePercent = ref<number | string>(100);
   const imageSizeError = ref('');
   const imageNaturalWidth = ref(0);
@@ -56,16 +57,24 @@ export function usePreviewImageSizing(domains: WorkbenchDomains) {
       : 100;
     imageSizeError.value = '';
     imageMenuPosition.value = {
-      left: `${Math.max(8, Math.min(event.clientX, window.innerWidth - 248))}px`,
-      top: `${Math.max(8, Math.min(event.clientY, window.innerHeight - 362))}px`,
+      left: `${event.clientX}px`, top: `${event.clientY}px`, visibility: 'hidden',
     };
     imageMenu.value = true;
     // 右键前浏览器自动滚入图片的 scroll 事件可能延后到菜单打开后才派发。
     scrollFrame = requestAnimationFrame(() => {
       scrollFrame = requestAnimationFrame(() => { scrollReady = true; });
     });
-    void nextTick(() => document.querySelector<HTMLElement>('.image-size-menu button')
-      ?.focus({ preventScroll: true }));
+    void nextTick(async () => {
+      const menu = document.querySelector<HTMLElement>('.image-size-menu');
+      if (!menu || !imageMenu.value) return;
+      imageMenuPosition.value = measuredContextMenuStyle(menu,
+        { x: event.clientX, y: event.clientY });
+      await nextTick();
+      if (imageMenu.value) {
+        menu.querySelector<HTMLButtonElement>('button:not(:disabled)')
+          ?.focus({ preventScroll: true });
+      }
+    });
   }
   function applyImageScale(percent: number | null) {
     const view = runtime.editorView;

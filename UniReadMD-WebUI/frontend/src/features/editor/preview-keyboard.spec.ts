@@ -10,8 +10,9 @@ describe('预览连续编辑', () => {
     expect(previewKeyEdit('()', 1, 1, 'Backspace', 'paragraph_open'))
       .toEqual({ value: '', start: 0, end: 0 });
   });
-  it('正文和标题回车产生新段落，代码块和软换行保持原生输入', () => {
+  it('正文回车只换一行，标题换段，代码块和软换行保持原生输入', () => {
     expect(previewKeyEdit('# 标题', 4, 4, 'Enter', 'heading_open')?.value).toBe('# 标题\n\n');
+    expect(previewKeyEdit('正文', 2, 2, 'Enter', 'paragraph_open')?.value).toBe('正文\n');
     expect(previewKeyEdit('代码', 2, 2, 'Enter', 'fence')).toBeNull();
     expect(previewKeyEdit('正文', 2, 2, 'Enter', 'paragraph_open', true)).toBeNull();
   });

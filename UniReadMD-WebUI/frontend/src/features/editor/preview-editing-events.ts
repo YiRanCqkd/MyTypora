@@ -43,8 +43,9 @@ export function usePreviewEditingEvents(input: UsePreviewEditingEventsDependenci
     buildPreviewInlineEditStyle,refreshPreviewInlineEditorPosition,revealPreviewInlineEditorCaret,
   } = input;
 
-  function openPreviewTableCellEditor(selection: PreviewTableSelection) {
+  function openPreviewTableCellEditor(selection: PreviewTableSelection, source = false) {
     closePreviewTableCellEditorAndCommit();
+    if (!source && runtime.openVisualTableCell?.(selection)) return;
 
     const cell = findPreviewTableCellNode(selection);
     if (!cell) {
@@ -101,7 +102,7 @@ export function usePreviewEditingEvents(input: UsePreviewEditingEventsDependenci
         endLine: tableContext.endLine,
         rowIndex: tableContext.rowIndex,
         colIndex: tableContext.colIndex,
-      });
+      }, event.altKey);
       return;
     }
 

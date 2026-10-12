@@ -1,4 +1,6 @@
 import type { Ref } from 'vue';
+import { nextTick } from 'vue';
+import { measuredContextMenuStyle } from './context-menu-position';
 import type { WorkbenchDomains } from '../editor/workbench-domains';
 import type { FileTreeRow } from './workspace-contracts';
 import type { WorkflowRunner } from './parity-images';
@@ -7,7 +9,7 @@ import { bridgeService } from '../../services/bridge';
 export function createParityFileOperations(input: {
   domains: WorkbenchDomains; execute: WorkflowRunner;
   selectedRow: Ref<FileTreeRow | null>; fileMenu: Ref<boolean>;
-  fileMenuPosition: Ref<{ left: string; top: string }>;
+  fileMenuPosition: Ref<Record<string, string>>;
   entryName: Ref<string>; entryAction: Ref<string>; dialog: Ref<string>;
 }) {
   const { domains, execute, selectedRow, fileMenu, fileMenuPosition,
@@ -18,9 +20,18 @@ export function createParityFileOperations(input: {
   function openFileMenu(event: MouseEvent, row: FileTreeRow) {
     if (row.path.startsWith('dir:')) return;
     selectedRow.value = row;
-    fileMenuPosition.value = { left: `${Math.min(event.clientX, innerWidth - 220)}px`,
-      top: `${Math.min(event.clientY, innerHeight - 290)}px` };
+    runtime.flushEdits?.();
+    domains.editor.preview().closePreviewTableMenu();
+    fileMenuPosition.value = { left: `${event.clientX}px`, top: `${event.clientY}px`,
+      visibility: 'hidden' };
     fileMenu.value = true;
+    void nextTick(async () => {
+      const menu = document.querySelector<HTMLElement>('.workspace-context-menu');
+      if (!menu || !fileMenu.value) return;
+      fileMenuPosition.value = measuredContextMenuStyle(menu, event);
+      await nextTick();
+      if (fileMenu.value) menu.querySelector('button')?.focus({ preventScroll: true });
+    });
   }
 
   function requestEntry(action: string) {

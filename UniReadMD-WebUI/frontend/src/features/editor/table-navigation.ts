@@ -115,7 +115,7 @@ export function useTableNavigation(input: UseTableNavigationDependencies) {
       ...finalSelection,
       rowIndex: targetRow,
       colIndex: targetCol,
-    });
+    }, true);
   }
 
   function handlePreviewTableCellEditBlur() {

@@ -124,8 +124,10 @@ describe('实际工作台集成', () => {
     const { app, store } = await start('前文\n\n| 标题 |\n| --- |\n| 原值 |\n\n后文');
     await app.find('.preview tbody td').trigger('click');
     await flushPromises();
-    const cell = app.find('.preview-table-cell-editor-input');
-    await cell.setValue('新值');
+    const cell = app.find('.preview td[contenteditable=true]');
+    expect(app.find('.preview-table-cell-editor-input').exists()).toBe(false);
+    cell.element.textContent = '新值';
+    await cell.trigger('input');
     await cell.trigger('keydown', { key: 'Enter' });
     await flushPromises();
     expect(store.content).toContain('新值');

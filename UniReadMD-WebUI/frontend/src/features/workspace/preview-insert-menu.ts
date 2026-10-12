@@ -2,12 +2,14 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Transaction } from '@codemirror/state';
 import type { WorkbenchDomains } from '../editor/workbench-domains';
 import { buildPreviewInsertion, type PreviewInsertKind } from '../editor/preview-insertion';
+import { measuredContextMenuStyle } from './context-menu-position';
 
 export function usePreviewInsertMenu(domains: WorkbenchDomains, insertImages: () => Promise<void>) {
   const { store, runtime, previewHost } = domains.editor.foundation;
   const sourceMode = domains.settings.foundation().sourceMode;
   const visible = ref(false);
-  const position = ref({ left: '0px', top: '0px' });
+  const position = ref<Record<string, string>>({ left: '0px', top: '0px' });
+  let point = { x: 0, y: 0 };
   const section = ref<'main' | 'headings' | 'table'>('main');
   const rows = ref(2);
   const columns = ref(2);
@@ -41,13 +43,16 @@ export function usePreviewInsertMenu(domains: WorkbenchDomains, insertImages: ()
     section.value = 'main';
     rows.value = 2;
     columns.value = 2;
-    position.value = {
-      left: `${Math.max(8, Math.min(event.clientX, window.innerWidth - 232))}px`,
-      top: `${Math.max(8, Math.min(event.clientY, window.innerHeight - 452))}px`,
-    };
+    point = { x: event.clientX, y: event.clientY };
+    position.value = { left: `${point.x}px`, top: `${point.y}px`, visibility: 'hidden' };
     visible.value = true;
-    void nextTick(() => document.querySelector<HTMLElement>('.preview-insert-menu button')
+    void reposition().then(() => document.querySelector<HTMLElement>('.preview-insert-menu button')
       ?.focus({ preventScroll: true }));
+  }
+  async function reposition() {
+    await nextTick();
+    const menu = document.querySelector<HTMLElement>('.preview-insert-menu');
+    if (menu && visible.value) position.value = measuredContextMenuStyle(menu, point);
   }
   function active() {
     const view = runtime.editorView;
@@ -132,5 +137,5 @@ export function usePreviewInsertMenu(domains: WorkbenchDomains, insertImages: ()
     window.removeEventListener('blur', close);
     window.removeEventListener('keydown', keydown, true);
   });
-  return { visible, position, section, rows, columns, close, insert, image };
+  return { visible, position, section, rows, columns, close, insert, image, reposition };
 }

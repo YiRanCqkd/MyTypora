@@ -25,6 +25,13 @@ async function stop() {
   await exited;
   application = undefined;
 }
+async function save(page) {
+  // 使用原生菜单验证真实保存链路，避免桌面焦点影响系统加速键的派发。
+  await application.evaluate(({ Menu }) => Menu.getApplicationMenu().items[0].submenu.items
+    .find((item) => item.label === '保存').click());
+  await expect(page.locator('.dirty-dot')).toHaveCount(0);
+  await expect(page.locator('.error-banner')).toHaveCount(0);
+}
 try {
   const environment = { ...process.env, UNIREADMD_TEST_MODE: '1',
     UNIREADMD_TEST_USER_DATA: path.join(directory, 'profile') };
@@ -38,6 +45,13 @@ try {
   let page = await application.firstWindow();
   page.setDefaultTimeout(20_000);
   await expect(page.locator('.preview')).toBeVisible();
+  // 原生菜单加速键需要活动窗口，不能依赖测试模式下隐藏窗口的偶然焦点状态。
+  await application.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows()[0];
+    window.show();
+    window.focus();
+    window.webContents.focus();
+  });
   await application.evaluate(({ dialog, BrowserWindow }, filePath) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [filePath] });
     BrowserWindow.getAllWindows()[0].webContents.send('menu:command', 'file-open');
@@ -49,9 +63,10 @@ try {
   await expect(paragraph.locator('strong')).toHaveText('加粗');
   await paragraph.press('End');
   await page.keyboard.insertText(' 中文续写');
+  await expect(paragraph).toContainText('中文续写');
   await page.waitForTimeout(150);
   await expect(paragraph).toBeFocused();
-  await page.keyboard.press('Control+s');
+  await save(page);
   await expect.poll(() => fs.readFile(source, 'utf8')).toContain('**加粗** 结尾 中文续写');
   checks.push('真实文档正文保持格式原位编辑，输入后光标稳定并保存到磁盘');
 
@@ -59,14 +74,14 @@ try {
   await page.keyboard.press('End');
   await page.keyboard.press('Enter');
   await page.keyboard.insertText('标题下的新段落');
-  await page.keyboard.press('Control+s');
+  await save(page);
   await expect.poll(() => fs.readFile(source, 'utf8'))
     .toContain('# 原位标题\n\n标题下的新段落\n\n正文');
   await page.locator('.preview li').click();
   await page.keyboard.press('End');
   await page.keyboard.press('Enter');
   await page.keyboard.insertText('第二项');
-  await page.keyboard.press('Control+s');
+  await save(page);
   await expect.poll(() => fs.readFile(source, 'utf8')).toContain('- 第一项\n- 第二项');
   checks.push('标题换段及简单列表续项直接输入，保存后保持 Markdown 结构');
 
@@ -85,7 +100,7 @@ try {
   await quote.press('Control+a');
   await quote.press('Control+b');
   await expect(quote.locator('b, strong')).toHaveText('中文组合输入');
-  await page.keyboard.press('Control+s');
+  await save(page);
   await expect.poll(() => fs.readFile(source, 'utf8')).toContain('> **中文组合输入**');
   checks.push('中文组合事件保留编辑 DOM，结束输入后格式快捷键与保存一致');
 
@@ -96,7 +111,7 @@ try {
   await expect(page.locator('.preview li').last()).not.toContainText('可撤销文字');
   await page.keyboard.press('Control+Shift+z');
   await expect(page.locator('.preview li').last()).toContainText('可撤销文字');
-  await page.keyboard.press('Control+s');
+  await save(page);
   if (evidence) {
     await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]
       .showInactive());
@@ -117,7 +132,8 @@ try {
   const exported = await browser.newPage();
   await exported.goto(pathToFileURL(exportedFile).href);
   await expect(exported.locator('blockquote strong')).toHaveText('中文组合输入');
-  await expect(exported.locator('[contenteditable="true"], .preview-visual-editing')).toHaveCount(0);
+  await expect(exported.locator('[contenteditable="true"], .preview-visual-editing'))
+    .toHaveCount(0);
   checks.push('真实 IPC 导出后离线展示格式正确，活动编辑属性未进入导出内容');
 
   await stop();

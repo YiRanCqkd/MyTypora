@@ -77,28 +77,8 @@
 .preview-inline-editor-input { overflow: hidden; }
 
 .workspace-context-menu {
-  position: fixed;
   z-index: 1000;
-  width: 210px;
-  padding: 5px;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  box-shadow: 0 4px 20px rgb(0 0 0 / 15%);
 }
-
-.workspace-context-menu button {
-  display: block;
-  width: 100%;
-  padding: 7px 10px;
-  text-align: left;
-  border: none;
-  color: inherit;
-  background: transparent;
-}
-
-.workspace-context-menu button:hover { background: var(--item-hover-bg); }
 
 .workbench-dialog-backdrop {
   position: fixed;
@@ -152,12 +132,16 @@
 .layout.on-focus-mode .preview > :not(.focus-active) { opacity: 0.35; }
 .layout.on-focus-mode .preview > .focus-active { opacity: 1; }
 .layout.ty-on-typewriter-mode .preview { padding-bottom: 45vh; padding-top: 30vh; }
-.preview .hljs-keyword, .preview .hljs-selector-tag { color: #b42335; }
-.preview .hljs-string, .preview .hljs-attr { color: #155b34; }
-.preview .hljs-number, .preview .hljs-literal { color: #075a8b; }
-.preview .hljs-comment { color: #687078; font-style: italic; }
-.preview .hljs-title, .preview .hljs-built_in { color: #6844a3; }
-html[data-theme='dark'] .preview .hljs-keyword { color: #ff8d9e; }
-html[data-theme='dark'] .preview .hljs-string { color: #9fd6a9; }
-html[data-theme='dark'] .preview .hljs-number { color: #9ecbff; }
-html[data-theme='dark'] .preview .hljs-title { color: #cdb2ff; }
+:is(.preview, .preview-inline-code) .hljs-keyword,
+:is(.preview, .preview-inline-code) .hljs-selector-tag { color: #b42335; }
+:is(.preview, .preview-inline-code) .hljs-string,
+:is(.preview, .preview-inline-code) .hljs-attr { color: #155b34; }
+:is(.preview, .preview-inline-code) .hljs-number,
+:is(.preview, .preview-inline-code) .hljs-literal { color: #075a8b; }
+:is(.preview, .preview-inline-code) .hljs-comment { color: #687078; font-style: italic; }
+:is(.preview, .preview-inline-code) .hljs-title,
+:is(.preview, .preview-inline-code) .hljs-built_in { color: #6844a3; }
+html[data-theme='dark'] :is(.preview, .preview-inline-code) .hljs-keyword { color: #ff8d9e; }
+html[data-theme='dark'] :is(.preview, .preview-inline-code) .hljs-string { color: #9fd6a9; }
+html[data-theme='dark'] :is(.preview, .preview-inline-code) .hljs-number { color: #9ecbff; }
+html[data-theme='dark'] :is(.preview, .preview-inline-code) .hljs-title { color: #cdb2ff; }

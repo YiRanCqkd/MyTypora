@@ -13,7 +13,8 @@ export function createPreviewSelection(input: CreatePreviewSelectionDependencies
     }
 
     // SVG 节点和文字也可触发点击，但编辑映射必须落在外层 HTML 源码块。
-    const mapped = target.closest('[data-source-start][data-source-end][data-source-token]');
+    const mapped = target.closest('pre[data-source-start][data-source-end][data-source-token]')
+      || target.closest('[data-source-start][data-source-end][data-source-token]');
     return mapped instanceof HTMLElement ? mapped : null;
   }
 

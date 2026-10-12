@@ -46,7 +46,7 @@ test('空白工作区右键插入指定行列表格，直接编辑表头', async
   await page.getByRole('button', { name: '插入表格', exact: true }).click();
   await expect(page.locator('.preview table tbody tr')).toHaveCount(3);
   await expect(page.locator('.preview table th')).toHaveCount(4);
-  const cell = page.getByTestId('preview-table-cell-editor-input');
+  const cell = page.locator('.preview [contenteditable="true"]');
   await expect(cell).toBeFocused();
   await cell.fill('名称');
   await cell.press('Enter');
@@ -79,7 +79,7 @@ test('长文档末尾插入表格，自动滚入后单元格持续获得编辑�
   await rightClickBlank(page);
   await page.getByRole('menuitem', { name: '表格…' }).click();
   await page.getByRole('button', { name: '插入表格', exact: true }).click();
-  const cell = page.getByTestId('preview-table-cell-editor-input');
+  const cell = page.locator('.preview [contenteditable="true"]');
   await expect(cell).toBeFocused();
   await page.waitForTimeout(150);
   await expect(cell).toBeFocused();

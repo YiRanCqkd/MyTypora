@@ -44,7 +44,8 @@ export interface WorkbenchRuntime {
   documentRevision?: number;
   resetDocument?: (content: string) => void;
   flushEdits?: () => void;
-  flushVisualEdits?: () => void;
+  flushVisualEdits?: (selection?: PreviewTableSelection) => PreviewTableSelection | undefined;
+  openVisualTableCell?: (selection: PreviewTableSelection) => boolean;
   beforeUnloadCleanup?: () => void;
   autoSaveCleanup?: () => void;
   directoryCleanup?: () => void;

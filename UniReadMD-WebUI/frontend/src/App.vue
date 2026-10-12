@@ -1,6 +1,8 @@
 <script setup lang='ts'>
 import WritingTools from './components/WritingTools.vue';
 import { useWorkbench } from './features/editor/use-workbench';
+import { contextMenuKeys } from './features/workspace/context-menu-position';
+import { syncPreviewCodeScroll } from './features/editor/preview-code-presentation';
 import WorkbenchDialogs from './components/WorkbenchDialogs.vue';
 
 const { parityWorkflows,activeHeadingLine,activeTab,applyPreviewTableAction,changeSpellCheckEnabled,
@@ -22,6 +24,7 @@ const { parityWorkflows,activeHeadingLine,activeTab,applyPreviewTableAction,chan
     handleWindowDrop,isDocumentLoading,isDragOverFile,jumpToHeading,layoutClassName,layoutStyle,
     minimizeWindow,openFileFromList,newFile,openFolder,outlineDisplayItems,pinOutline,previewHost,
     previewInlineEditStyle,previewInlineEditTextarea,previewInlineEditTitle,
+    previewInlineEditCode,previewInlineEditHighlight,previewInlineEditComposing,
     previewInlineEditValue,previewInlineEditVisible,previewTableCellEditInput,
     previewTableCellEditStyle,previewTableCellEditValue,previewTableCellEditVisible,
     preferencesVisible,previewTableMenuStyle,previewTableMenuVisible,renderedHtml,
@@ -361,14 +364,26 @@ const { parityWorkflows,activeHeadingLine,activeTab,applyPreviewTableAction,chan
           <section
             v-if='previewInlineEditVisible'
             class='preview-inline-editor'
+            :class='{
+              "preview-inline-code": previewInlineEditCode,
+              "preview-code-composing": previewInlineEditComposing,
+            }'
             :style='previewInlineEditStyle'
             data-testid='preview-inline-editor'
           >
+            <pre
+              v-if='previewInlineEditCode'
+              class='preview-code-highlight'
+              aria-hidden='true'
+              v-html='previewInlineEditHighlight'
+            ></pre>
             <textarea
               ref='previewInlineEditTextarea'
               v-model='previewInlineEditValue'
               class='preview-inline-editor-input'
               rows='1'
+              :wrap='previewInlineEditCode ? "off" : "soft"'
+              :spellcheck='previewInlineEditCode ? false : undefined'
               :aria-label='previewInlineEditTitle'
               @input='handlePreviewInlineEditInput'
               @compositionstart='handlePreviewInlineEditCompositionStart'
@@ -376,6 +391,7 @@ const { parityWorkflows,activeHeadingLine,activeTab,applyPreviewTableAction,chan
               @blur='handlePreviewInlineEditBlur'
               @keydown='handlePreviewInlineEditKeydown'
               @keyup='revealPreviewInlineEditorCaret'
+              @scroll='syncPreviewCodeScroll'
             ></textarea>
           </section>
           <section
@@ -395,9 +411,10 @@ const { parityWorkflows,activeHeadingLine,activeTab,applyPreviewTableAction,chan
           </section>
           <section
             v-if='previewTableMenuVisible'
-            class='preview-table-menu'
+            class='preview-table-menu typora-context-menu'
             :style='previewTableMenuStyle'
             data-testid='preview-table-menu'
+            role='group' aria-label='表格操作' @keydown='contextMenuKeys'
           >
             <button type='button' @click='applyPreviewTableAction("insert-row-above")'>
               在上方插入行
@@ -425,9 +442,10 @@ const { parityWorkflows,activeHeadingLine,activeTab,applyPreviewTableAction,chan
           </section>
           <section
             v-if='sourceContextMenuVisible'
-            class='source-context-menu'
+            class='source-context-menu typora-context-menu'
             :style='sourceContextMenuStyle'
             data-testid='source-context-menu'
+            role='group' aria-label='源码操作' @keydown='contextMenuKeys'
           >
             <button type='button' @click='handleSourceContextAction("cut")'>剪切</button>
             <button type='button' @click='handleSourceContextAction("copy")'>复制</button>

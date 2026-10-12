@@ -26,7 +26,8 @@ export function createMarkdownSourceMapping(input: CreateMarkdownSourceMappingDe
       annotateTokenSourceRange(token);
 
       if (fallbackRule) {
-        return fallbackRule(tokens, idx, options, env, self);
+        const html = fallbackRule(tokens, idx, options, env, self);
+        return ruleName === 'code_block' ? mapCodeContainer(html, token) : html;
       }
 
       return self.renderToken(tokens, idx, options);
@@ -38,6 +39,15 @@ export function createMarkdownSourceMapping(input: CreateMarkdownSourceMappingDe
   });
 
   const originalFenceRule = markdown.renderer.rules.fence;
+
+  function mapCodeContainer(html: string, token: MarkdownSourceToken) {
+    const start = token.attrGet?.('data-source-start') || '';
+    const end = token.attrGet?.('data-source-end') || '';
+    const type = token.attrGet?.('data-source-token') || '';
+    // markdown-it 默认把映射放在 code 上；编辑锚点必须覆盖 pre 的背景和留白。
+    return html.replace(/^<pre(?=[\s>])/, `<pre data-source-start='${start}'`
+      + ` data-source-end='${end}' data-source-token='${type}'`);
+  }
 
   const diagramFenceLanguages = new Set(['mermaid', 'sequence', 'flow']);
 
@@ -57,7 +67,7 @@ export function createMarkdownSourceMapping(input: CreateMarkdownSourceMappingDe
 
     if (!diagramFenceLanguages.has(info)) {
       if (originalFenceRule) {
-        return originalFenceRule(tokens, idx, options, env, self);
+        return mapCodeContainer(originalFenceRule(tokens, idx, options, env, self), token);
       }
 
       return self.renderToken(tokens, idx, options);

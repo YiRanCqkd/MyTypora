@@ -34,7 +34,7 @@ export function previewKeyEdit(
       return edit(`\n${list[1]}${marker} ${task}`);
     }
     const quote = /^(\s*(?:>\s*)+)/.exec(line);
-    return edit(quote ? `\n${quote[1]}` : '\n\n');
+    return edit(quote ? `\n${quote[1]}` : token === 'paragraph_open' ? '\n' : '\n\n');
   }
   return null;
 }

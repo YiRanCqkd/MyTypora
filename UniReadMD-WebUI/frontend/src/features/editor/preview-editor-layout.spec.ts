@@ -191,6 +191,34 @@ describe('预览编辑真实字体与占位布局', () => {
     expect(style.minHeight).toBe('80px');
   });
 
+  it('代码源码沿用原块内边距、圆角和背景，长行预留滚动条高度', () => {
+    const f = fixture('pre');
+    f.anchor.dataset.sourceToken = 'fence';
+    f.anchor.style.cssText += 'padding: 8px 12px; border: 1px solid; border-radius: 3px;';
+    Object.defineProperty(f.textarea, 'scrollWidth', { value: 1200 });
+    Object.defineProperty(f.textarea, 'clientWidth', { value: 600 });
+    Object.defineProperty(f.textarea, 'offsetHeight', { value: 200 });
+    Object.defineProperty(f.textarea, 'clientHeight', { value: 183 });
+    const style = layoutPreviewEditor(f.container, f.preview, f.anchor, f.textarea, false);
+    expect(style.backgroundColor).toBe('var(--code-block-bg)');
+    expect(style['--preview-code-padding']).toBe('9px 13px 9px 13px');
+    expect(style.borderRadius).toBe('3px');
+    expect(f.textarea.style.paddingLeft).toBe('13px');
+    expect(f.textarea.style.height).toBe('217px');
+  });
+
+  it('图表源码也使用等宽字体，重复利用输入层不会把代码内边距带入正文', () => {
+    const f = fixture('div');
+    f.anchor.dataset.sourceToken = 'fence';
+    const codeStyle = layoutPreviewEditor(f.container, f.preview, f.anchor, f.textarea, false);
+    expect(codeStyle.fontFamily).toContain('Consolas');
+    expect(f.textarea.style.paddingLeft).toBe('13px');
+    f.anchor.dataset.sourceToken = 'paragraph_open';
+    const textStyle = layoutPreviewEditor(f.container, f.preview, f.anchor, f.textarea, false);
+    expect(textStyle.fontFamily).toBe('serif');
+    expect(f.textarea.style.paddingLeft).toBe('');
+  });
+
   it('退出编辑清理占位，保留正文已有样式', () => {
     const f = fixture();
     f.anchor.classList.add('preview-editing-block');

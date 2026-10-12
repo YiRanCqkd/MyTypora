@@ -83,7 +83,7 @@ export function parseMarkdownTable(source: string): ParsedMarkdownTable | null {
     || delimiters.some((item) => !/^:?-+:?$/.test(item))) return null;
   const rows = lines
     .slice(2)
-    .filter((line) => line.includes('|'))
+    // 数据行可以省略竖线；短行由 normalizeRow 补齐，不能直接丢弃。
     .map((line) => parseMarkdownTableLine(line));
   const colCount = Math.max(
     1,

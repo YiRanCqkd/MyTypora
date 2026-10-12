@@ -3,6 +3,18 @@ import { applyVisualPrefix, describeVisualBlock, nextVisualPrefix,
   visualHtmlToMarkdown } from './visual-markdown';
 
 describe('原位可视编辑 Markdown 转换', () => {
+  it('正文回车保留一个换行，移除浏览器承载光标的末尾占位', () => {
+    expect(visualHtmlToMarkdown('正文<br><br>', true)).toBe('正文\n');
+    expect(visualHtmlToMarkdown('正文<br><br><br>', true)).toBe('正文\n\n');
+    expect(visualHtmlToMarkdown('<br>', true)).toBe('');
+    expect(visualHtmlToMarkdown('<br><br>', true)).toBe('\n');
+    expect(visualHtmlToMarkdown('<strong>正文<br><br></strong>', true)).toBe('**正文**\n');
+    expect(visualHtmlToMarkdown('正文<br>下一行', true)).toBe('正文\n下一行');
+    expect(visualHtmlToMarkdown('正文<br>\n下一行', true)).toBe('正文\n下一行');
+    expect(visualHtmlToMarkdown('<div>第一段</div><div>第二段</div>', true))
+      .toBe('第一段\n\n第二段');
+  });
+
   it('忽略渲染器在换行标签后的排版换行，保留用户空格和连续换行标签', () => {
     expect(visualHtmlToMarkdown('首行<br>\n次行<br>\n末行')).toBe('首行\n次行\n末行');
     expect(visualHtmlToMarkdown('首行<br>\r\n<strong>次行</strong>'))

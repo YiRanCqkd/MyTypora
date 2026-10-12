@@ -2,6 +2,7 @@
 import { nextTick, reactive } from 'vue';
 import type { usePreviewInsertMenu } from '../features/workspace/preview-insert-menu';
 import type { PreviewInsertKind } from '../features/editor/preview-insertion';
+import { contextMenuKeys } from '../features/workspace/context-menu-position';
 
 const props = defineProps<{ menu: ReturnType<typeof usePreviewInsertMenu> }>();
 const model = reactive(props.menu);
@@ -13,6 +14,7 @@ const blocks: Array<[PreviewInsertKind, string]> = [
 async function show(section: 'main' | 'headings' | 'table') {
   model.section = section;
   await nextTick();
+  await model.reposition();
   document.querySelector<HTMLElement>('.preview-insert-menu input, .preview-insert-menu button')
     ?.focus({ preventScroll: true });
 }
@@ -23,21 +25,13 @@ function menuKeys(event: KeyboardEvent) {
     void show('main');
     return;
   }
-  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
-    || event.target instanceof HTMLInputElement) return;
-  const controls = [...(event.currentTarget as HTMLElement)
-    .querySelectorAll<HTMLElement>('button, input')];
-  const current = controls.indexOf(document.activeElement as HTMLElement);
-  const next = event.key === 'Home' ? 0 : event.key === 'End' ? controls.length - 1
-    : (current + (event.key === 'ArrowDown' ? 1 : -1) + controls.length) % controls.length;
-  event.preventDefault();
-  controls[next]?.focus();
+  contextMenuKeys(event);
 }
 </script>
 
 <template>
   <div
-    v-if='model.visible' class='preview-insert-menu' :style='model.position'
+    v-if='model.visible' class='preview-insert-menu typora-context-menu' :style='model.position'
     role='menu' aria-label='工作区插入菜单' @keydown='menuKeys'
   >
     <template v-if='model.section === "main"'>
@@ -79,36 +73,17 @@ function menuKeys(event: KeyboardEvent) {
 
 <style scoped>
 .preview-insert-menu {
-  box-sizing: border-box;
-  position: fixed;
   z-index: 1100;
-  width: min(224px, calc(100vw - 16px));
-  max-height: calc(100vh - 16px);
-  overflow: auto;
-  padding: 4px 0;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: 0 3px 6px rgb(15 15 15 / 4%), 0 9px 24px rgb(15 15 15 / 5%);
-  font-size: 13px;
 }
-button {
-  display: block;
-  width: 100%;
-  border: 0;
-  padding: 5px 16px;
-  text-align: left;
-  line-height: 1.5;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-button:hover, button:focus-visible { background: var(--item-hover-bg); }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 button span { float: right; }
-hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; opacity: 0.5; }
-label { display: flex; align-items: center; gap: 8px; padding: 8px 16px; }
-input { width: 70px; color: inherit; background: var(--panel); border: 1px solid var(--line); }
+label { display: flex; align-items: center; gap: 8px; padding: 8px 24px; }
+input {
+  width: 70px;
+  color: inherit;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font: inherit;
+}
 </style>

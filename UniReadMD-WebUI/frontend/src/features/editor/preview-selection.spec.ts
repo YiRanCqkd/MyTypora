@@ -5,6 +5,16 @@ import { useEditorHosts } from './editor-hosts';
 afterEach(() => { document.body.replaceChildren(); });
 
 describe('图表与正文点击的源码映射', () => {
+  it('代码文字和背景留白统一定位到完整代码容器', () => {
+    const host = document.createElement('article');
+    host.innerHTML = '<pre data-source-start="1" data-source-end="3" '
+      + 'data-source-token="fence"><code data-source-start="1" data-source-end="3" '
+      + 'data-source-token="fence"><span>const</span> a = 1;</code></pre>';
+    const selection = createPreviewSelection(useEditorHosts());
+    expect(selection.findSourceMappedNode(host.querySelector('span'))).toBe(host.firstChild);
+    expect(selection.findSourceMappedNode(host.querySelector('pre'))).toBe(host.firstChild);
+  });
+
   it('点击 SVG 节点文字可定位到外层 HTML 图表源码块', () => {
     const host = document.createElement('article');
     host.innerHTML = '<div data-source-start="1" data-source-end="5" '

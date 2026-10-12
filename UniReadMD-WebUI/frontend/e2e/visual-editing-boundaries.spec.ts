@@ -127,6 +127,6 @@ test('刚输入正文立即右键，菜单保持打开并可插入表格', async
   await expect(page.getByRole('menu', { name: '工作区插入菜单' })).toBeVisible();
   await page.getByRole('menuitem', { name: '表格…' }).click();
   await page.getByRole('button', { name: '插入表格', exact: true }).click();
-  await expect(page.getByTestId('preview-table-cell-editor-input')).toBeFocused();
+  await expect(page.locator('.preview table th[contenteditable="true"]')).toBeFocused();
   await expect(page.locator('.preview > p')).toHaveText('刚输入的正文');
 });

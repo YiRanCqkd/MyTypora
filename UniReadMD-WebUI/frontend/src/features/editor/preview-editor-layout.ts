@@ -63,10 +63,13 @@ export function revealPreviewEditorCaret(
   const padding = 16;
   if (top >= viewport.top + padding && top + rect.height <= viewport.bottom - padding) return;
   const computed = getComputedStyle(textarea);
+  const code = textarea.wrap === 'off';
   const mirror = document.createElement('div');
   Object.assign(mirror.style, {
     position: 'fixed', top: '0', left: '0', visibility: 'hidden', pointerEvents: 'none',
-    width: `${textarea.clientWidth}px`, whiteSpace: 'pre-wrap', overflowWrap: 'break-word',
+    width: `${textarea.clientWidth}px`,
+    whiteSpace: code ? 'pre' : 'pre-wrap', overflowWrap: code ? 'normal' : 'break-word',
+    boxSizing: 'border-box', padding: computed.padding,
     fontFamily: computed.fontFamily, fontSize: computed.fontSize, fontWeight: computed.fontWeight,
     fontStyle: computed.fontStyle, lineHeight: computed.lineHeight,
     letterSpacing: computed.letterSpacing, tabSize: computed.tabSize,
@@ -78,7 +81,7 @@ export function revealPreviewEditorCaret(
   mirror.append(caret);
   document.body.append(mirror);
   const caretTop = top + caret.getBoundingClientRect().top
-    - mirror.getBoundingClientRect().top;
+    - mirror.getBoundingClientRect().top - textarea.scrollTop;
   const lineHeight = parseFloat(computed.lineHeight)
     || (parseFloat(computed.fontSize) || 16) * 1.75;
   mirror.remove();
@@ -97,9 +100,13 @@ export function layoutPreviewEditor(
   fragment: boolean,
 ) {
   const textNode = anchor.matches('pre') ? anchor.querySelector('code') || anchor : anchor;
+  const code = anchor.matches('pre')
+    || ['fence', 'code_block'].includes(anchor.dataset.sourceToken || '');
+  const blockStyle = getComputedStyle(anchor);
   const computed = getComputedStyle(textNode);
   const typography = {
-    fontFamily: computed.fontFamily,
+    fontFamily: code && !anchor.matches('pre')
+      ? 'Consolas, "Microsoft YaHei UI", monospace' : computed.fontFamily,
     fontSize: computed.fontSize,
     fontWeight: computed.fontWeight,
     fontStyle: computed.fontStyle,
@@ -107,11 +114,24 @@ export function layoutPreviewEditor(
     letterSpacing: computed.letterSpacing,
     color: computed.color,
   };
+  // 源码层沿用代码块的背景和内边距，围栏标记也按等宽字体展示。
+  const padding = code ? {
+    paddingTop: `${(parseFloat(blockStyle.paddingTop) || 8)
+      + (parseFloat(blockStyle.borderTopWidth) || 1)}px`,
+    paddingRight: `${(parseFloat(blockStyle.paddingRight) || 12)
+      + (parseFloat(blockStyle.borderRightWidth) || 1)}px`,
+    paddingBottom: `${(parseFloat(blockStyle.paddingBottom) || 8)
+      + (parseFloat(blockStyle.borderBottomWidth) || 1)}px`,
+    paddingLeft: `${(parseFloat(blockStyle.paddingLeft) || 12)
+      + (parseFloat(blockStyle.borderLeftWidth) || 1)}px`,
+  } : {};
   const initial = anchor.getBoundingClientRect();
   let width = initial.width;
   let height = Math.max(initial.height, parseFloat(computed.lineHeight) || 24);
   if (textarea) {
     Object.assign(textarea.style, typography);
+    textarea.style.padding = '';
+    if (code) Object.assign(textarea.style, padding);
     if (fragment) {
       const measure = document.createElement('span');
       Object.assign(measure.style, typography, { position: 'absolute', visibility: 'hidden',
@@ -130,6 +150,11 @@ export function layoutPreviewEditor(
     textarea.style.height = '0px';
     height = Math.max(Math.ceil(textarea.scrollHeight), parseFloat(computed.lineHeight) || 24);
     textarea.style.height = `${height}px`;
+    if (code && textarea.scrollWidth > textarea.clientWidth) {
+      // 横向滚动条也占据高度，避免最后一行代码被遮住。
+      height += Math.max(0, textarea.offsetHeight - textarea.clientHeight);
+    }
+    textarea.style.height = `${height}px`;
     if (fragment) {
       anchor.style.setProperty('--preview-edit-height', `${height}px`);
     } else {
@@ -144,7 +169,12 @@ export function layoutPreviewEditor(
   const origin = container.getBoundingClientRect();
   return {
     ...typography,
-    backgroundColor: getComputedStyle(preview).backgroundColor,
+    backgroundColor: code ? 'var(--code-block-bg)' : getComputedStyle(preview).backgroundColor,
+    ...(code ? {
+      borderRadius: blockStyle.borderRadius || '3px',
+      '--preview-code-padding': `${padding.paddingTop} ${padding.paddingRight} `
+        + `${padding.paddingBottom} ${padding.paddingLeft}`,
+    } : {}),
     left: `${rect.left - origin.left}px`,
     top: `${rect.top - origin.top}px`,
     width: `${width}px`,

@@ -2,6 +2,10 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Transaction } from '@codemirror/state';
 import { isolateHistory, redo, undo } from '@codemirror/commands';
 import type { WorkbenchDomains } from '../editor/workbench-domains';
+import type { PreviewTableSelection } from '../editor/editor-contracts';
+import { parseMarkdownTable, applyPreviewTableActionToModel,
+  type PreviewTableAction } from '../../utils/preview-table';
+import { navigateVisualTable, writeVisualTableCell } from '../editor/visual-table';
 import { sanitizeMarkdownHtml } from '../markdown/safe-html';
 import { applyVisualPrefix, describeVisualBlock, nextVisualPrefix, visualHtmlToMarkdown,
   type VisualBlock } from '../editor/visual-markdown';
@@ -16,6 +20,7 @@ interface VisualSession {
   source: string;
   html: string;
   block: VisualBlock;
+  table?: PreviewTableSelection;
 }
 
 export function useVisualPreviewEditing(domains: WorkbenchDomains) {
@@ -34,10 +39,13 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
 
   function eligible(target: EventTarget | null) {
     const element = target instanceof Element ? target : null;
-    const node = element?.closest<HTMLElement>('p, h1, h2, h3, h4, h5, h6, li');
+    const node = element?.closest<HTMLElement>('p, h1, h2, h3, h4, h5, h6, li, th, td');
+    const cell = node?.matches('th, td');
     if (!node || !previewHost.value?.contains(node) || sourceMode.value
-      || !node.matches('[data-source-start][data-source-end]')
-      || node.closest('pre, table, .mermaid-block, .footnotes')
+      || !(cell ? domains.editor.table().resolvePreviewTableCellContext(node)
+        : node.matches('[data-source-start][data-source-end]'))
+      || node.closest(cell ? 'pre, .mermaid-block, .footnotes'
+        : 'pre, table, .mermaid-block, .footnotes')
       || node.querySelector('img, svg, input, ul, ol, .katex, mjx-container, .footnote-ref')
       || [...node.querySelectorAll('*')].some((child) => ![
         'BR', 'STRONG', 'B', 'EM', 'I', 'S', 'DEL', 'STRIKE', 'CODE', 'A', 'MARK', 'SUB', 'SUP',
@@ -51,7 +59,14 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
     const active = session;
     if (!active || !view || active.source !== view.state.doc.toString()) return;
     if (active.html === active.node.innerHTML) return;
-    const insert = applyVisualPrefix(visualHtmlToMarkdown(active.node.innerHTML), active.block);
+    const value = visualHtmlToMarkdown(active.node.innerHTML,
+      !active.table && active.block.kind === 'paragraph');
+    const insert = active.table
+      ? writeVisualTableCell(
+        view.state.doc.sliceString(active.from, active.to), active.table, value,
+      )
+      : applyVisualPrefix(value, active.block);
+    if (insert === null) return;
     if (view.state.doc.sliceString(active.from, active.to) === insert) return;
     writing = true;
     try {
@@ -94,13 +109,24 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
   function open(node: HTMLElement, point?: { x: number; y: number }, end = false) {
     const view = runtime.editorView;
     if (!view || !node.isConnected) return false;
-    const line = Number(node.dataset.sourceStart);
-    const endLine = Number(node.dataset.sourceEnd);
+    const table = node.matches('th, td')
+      ? domains.editor.table().resolvePreviewTableCellContext(node) : null;
+    const line = table?.startLine || Number(node.dataset.sourceStart);
+    const endLine = table?.endLine || Number(node.dataset.sourceEnd);
     if (!line || !endLine || endLine > view.state.doc.lines) return false;
     const from = view.state.doc.line(line).from;
     const to = view.state.doc.line(endLine).to;
     const original = view.state.doc.sliceString(from, to);
-    const block = describeVisualBlock(original);
+    const parsed = table ? parseMarkdownTable(original) : null;
+    const cellValue = table && parsed ? (table.rowIndex === 0 ? parsed.header[table.colIndex]
+      : parsed.rows[table.rowIndex - 1]?.[table.colIndex]) : null;
+    // 无法取得单元格值时交还源码入口，不能把缺失值当成可编辑内容。
+    if (table && cellValue == null) return false;
+    // 表格内换行只接受无属性的 br，其他 HTML 仍保留源码编辑入口。
+    const described = describeVisualBlock(table && cellValue != null
+      ? cellValue.replace(/<br\s*\/?>/gi, '\n') : original);
+    const block: VisualBlock | null = table && described
+      ? { prefix: '', kind: 'paragraph' } : described;
     if (!block) return false;
     domains.editor.preview().closePreviewInlineEditor();
     domains.editor.table().closePreviewTableCellEditorAndCommit();
@@ -110,12 +136,14 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
     void presentation.renderedHtml.value;
     presentation.previewVisualEditing.value = true;
     session = { node, from, to, line, endLine, original, source: view.state.doc.toString(),
-      html: node.innerHTML, block };
+      html: node.innerHTML, block, ...(table ? { table: {
+        startLine: line, endLine, rowIndex: table.rowIndex, colIndex: table.colIndex,
+      } } : {}) };
     currentCursorLine.value = line;
     store.setCursorHint(line);
     node.setAttribute('contenteditable', 'true');
     node.setAttribute('role', 'textbox');
-    node.setAttribute('aria-label', '原位可视编辑');
+    node.setAttribute('aria-label', table ? '表格单元格原位编辑' : '原位可视编辑');
     node.classList.add('preview-visual-editing');
     const caret = point ? document.caretRangeFromPoint?.(point.x, point.y) : null;
     if (caret && node.contains(caret.startContainer)) {
@@ -125,6 +153,58 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
       selection?.addRange(caret);
     } else placeCaret(node, end);
     return true;
+  }
+
+  async function reopenTable(selection: PreviewTableSelection, point?: { x: number; y: number }) {
+    await nextTick();
+    const table = previewHost.value?.querySelector<HTMLElement>(
+      `table[data-source-start='${selection.startLine}']`,
+    );
+    const node = table?.querySelectorAll('tr')[selection.rowIndex]
+      ?.querySelectorAll<HTMLElement>('th, td')[selection.colIndex];
+    if (!node) return;
+    domains.editor.events().openPreviewTableCellEditor({ ...selection,
+      endLine: Number(table!.dataset.sourceEnd) });
+    if (session?.node === node && point) {
+      const caret = document.caretRangeFromPoint?.(point.x, point.y);
+      if (caret && node.contains(caret.startContainer)) {
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(caret);
+      }
+    }
+  }
+
+  function navigateTable(direction: 'next' | 'previous' | 'down') {
+    const active = session;
+    const view = runtime.editorView;
+    if (!active?.table || !view) return;
+    commit();
+    const result = navigateVisualTable(view.state.doc.sliceString(active.from, active.to),
+      active.table, direction);
+    close();
+    if (!result) return;
+    if (view.state.doc.sliceString(active.from, active.to) !== result.content) {
+      view.dispatch({ changes: { from: active.from, to: active.to, insert: result.content },
+        annotations: Transaction.userEvent.of('input.table-row') });
+    }
+    void reopenTable(result.selection);
+  }
+
+  function tableStructureAction(action: PreviewTableAction) {
+    const active = session;
+    if (!active?.table) return;
+    commit();
+    close();
+    const result = domains.editor.table().mutatePreviewTable(active.table, (table, selection) => {
+      const actionResult = applyPreviewTableActionToModel(table, selection, action);
+      if (actionResult.errorMessage) {
+        domains.editor.foundation.errorMessage.value = actionResult.errorMessage;
+      }
+      return actionResult.changed;
+    });
+    if (result) void reopenTable(domains.editor.tableFeature().getPreviewTableSelectionAfterAction(
+      action, result.selection, result.table,
+    ));
   }
 
   async function reopen(line: number, end = false) {
@@ -160,7 +240,9 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
     if (window.getSelection()?.isCollapsed === false) return;
     const point = { x: event.clientX, y: event.clientY };
     if (session) {
-      let line = Number(node.dataset.sourceStart);
+      const table = node.matches('th, td')
+        ? domains.editor.table().resolvePreviewTableCellContext(node) : null;
+      let line = table?.startLine || Number(node.dataset.sourceStart);
       commit();
       if (line > session.endLine && runtime.editorView) {
         line += runtime.editorView.state.doc.lineAt(session.to).number - session.endLine;
@@ -168,7 +250,9 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
       close();
       event.preventDefault();
       event.stopImmediatePropagation();
-      void reopen(line);
+      if (table) void reopenTable({ ...table, startLine: line,
+        endLine: table.endLine + line - table.startLine }, point);
+      else void reopen(line);
     } else if (open(node, point)) {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -249,6 +333,30 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
       || !session.node.contains(event.target as Node)) return;
     const modifier = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
+    if (session.table) {
+      let action: PreviewTableAction | undefined;
+      if (modifier && event.shiftKey && key === 'enter') {
+        action = event.altKey ? 'insert-col-right' : 'insert-row-below';
+      } else if (modifier && event.shiftKey && ['delete', 'backspace'].includes(key)) {
+        action = event.altKey ? 'delete-col' : 'delete-row';
+      } else if (modifier && event.altKey) {
+        action = ({ arrowup: 'move-row-up', arrowdown: 'move-row-down',
+          arrowleft: 'move-col-left', arrowright: 'move-col-right',
+        } as Record<string, PreviewTableAction>)[key];
+      }
+      if (action || key === 'tab' || key === 'enter') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (action) tableStructureAction(action);
+        else if (key === 'tab') navigateTable(event.shiftKey ? 'previous' : 'next');
+        else if (modifier) close();
+        else if (event.shiftKey) { document.execCommand('insertLineBreak'); commit(); }
+        else navigateTable('down');
+        return;
+      }
+      // 单元格边界不能沿用正文的跨段合并和退格逻辑。
+      if (!modifier && key !== 'escape') return;
+    }
     if (modifier && key === 'v') plainPasteUntil = event.shiftKey ? Date.now() + 1000 : 0;
     if (!modifier && !event.altKey && !event.shiftKey
       && ['Backspace', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
@@ -258,7 +366,22 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
         const before = caret.cloneRange();
         before.selectNodeContents(session.node);
         before.setEnd(caret.startContainer, caret.startOffset);
-        const atStart = !before.toString().length;
+        // 换行可能嵌在加粗等格式节点内，空文本和格式容器不能遮住前方的 br。
+        const walker = document.createTreeWalker(before.cloneContents(),
+          NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+        let preceding: Node | null = null;
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (node instanceof HTMLBRElement
+            || node.nodeType === Node.TEXT_NODE && node.textContent) preceding = node;
+        }
+        if (event.key === 'Backspace' && preceding instanceof HTMLBRElement) {
+          // 删掉行间换行前先提交已有文字，让一次撤销只恢复这次合并。
+          commit();
+          runtime.editorView?.dispatch({ annotations: isolateHistory.of('before') });
+          // 此时由浏览器删除段内换行，不能继续按纯文本长度判断跨段边界。
+          return;
+        }
+        const atStart = preceding === null;
         const atEnd = before.toString().length === session.node.textContent?.length;
         const backwards = ['Backspace', 'ArrowUp', 'ArrowLeft'].includes(event.key);
         if ((backwards && atStart) || (!backwards && atEnd)) {
@@ -315,10 +438,12 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
       event.stopImmediatePropagation();
       if (key === 'z' || key === 'y') {
         const line = session.line;
+        const table = session.table;
         close();
         const view = runtime.editorView;
         if (view) (key === 'y' || event.shiftKey ? redo : undo)(view);
-        void reopen(Math.min(line, view?.state.doc.lines || 1), true);
+        if (table) void reopenTable(table);
+        else void reopen(Math.min(line, view?.state.doc.lines || 1), true);
       } else if (key === 'k') {
         const selection = window.getSelection();
         if (!selection?.rangeCount || selection.isCollapsed) return;
@@ -336,7 +461,7 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
       event.preventDefault();
       event.stopImmediatePropagation();
       if (modifier) close();
-      else if (session.block.kind === 'quote') {
+      else if (session.block.kind === 'quote' || session.block.kind === 'paragraph') {
         document.execCommand('insertLineBreak');
         commit();
       } else split();
@@ -400,7 +525,31 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
     });
   }
 
-  runtime.flushVisualEdits = () => close();
+  runtime.flushVisualEdits = (selection) => {
+    commit();
+    const view = runtime.editorView;
+    let mapped = selection;
+    if (selection && session && view) {
+      // 冻结预览仍使用会话开始时的行号；已防抖提交和待提交的改动都要换算。
+      const endLine = view.state.doc.lineAt(session.to).number;
+      const delta = endLine - session.endLine;
+      if (selection.startLine > session.endLine) {
+        mapped = { ...selection,
+          startLine: selection.startLine + delta, endLine: selection.endLine + delta };
+      } else if (session.table && selection.startLine === session.line) {
+        mapped = { ...selection, endLine };
+      }
+    }
+    close(false);
+    return mapped;
+  };
+  runtime.openVisualTableCell = (selection) => {
+    const node = domains.editor.table().findPreviewTableCellNode(selection);
+    if (!node || !eligible(node)) return false;
+    if (session?.node === node) return true;
+    if (session) { close(); void reopenTable(selection); return true; }
+    return open(node);
+  };
   watch(() => store.documentRevision, () => close(false), { flush: 'sync' });
   watch(() => store.content, () => { if (!writing && session) close(false); }, { flush: 'sync' });
   watch(sourceMode, () => close(), { flush: 'sync' });
@@ -419,6 +568,7 @@ export function useVisualPreviewEditing(domains: WorkbenchDomains) {
     close();
     cancelAnimationFrame(caretFrame);
     runtime.flushVisualEdits = undefined;
+    runtime.openVisualTableCell = undefined;
     document.removeEventListener('click', click, true);
     document.removeEventListener('input', input, true);
     document.removeEventListener('compositionstart', compositionStart, true);

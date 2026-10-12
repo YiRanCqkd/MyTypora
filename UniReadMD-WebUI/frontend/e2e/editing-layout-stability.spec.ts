@@ -10,6 +10,51 @@ async function openDocument(page: Page, content: string) {
   await expect(page.locator('.preview')).toBeVisible();
 }
 
+test('活动正文只保留插入光标，不绘制段落左侧装饰竖线', async ({ page }) => {
+  await openDocument(page, '前一段\n\n正在编辑的正文\n\n后一段');
+  const paragraph = page.locator('.preview p').nth(1);
+  await paragraph.click();
+  await expect(paragraph).toHaveAttribute('contenteditable', 'true');
+  await paragraph.press('Home');
+  await expect(paragraph).toBeFocused();
+  await expect(paragraph).toHaveCSS('box-shadow', 'none');
+  await expect(paragraph).toHaveCSS('border-left-width', '0px');
+});
+
+test('普通正文单击和输入不会插入上下空行，保存会话与重新渲染保持原有段距', async ({ page }) => {
+  await openDocument(page, '前一段\n\n正在编辑的正文\n\n后一段');
+  const paragraphs = page.locator('.preview > p');
+  const before = await paragraphs.evaluateAll((nodes) => nodes.map((node) => ({
+    top: node.getBoundingClientRect().top, height: node.getBoundingClientRect().height,
+    marginTop: getComputedStyle(node).marginTop, marginBottom: getComputedStyle(node).marginBottom,
+  })));
+  const paragraph = paragraphs.nth(1);
+  await paragraph.click();
+  await expect(paragraph).toHaveAttribute('contenteditable', 'true');
+  const assertGeometry = async () => {
+    const after = await paragraphs.evaluateAll((nodes) => nodes.map((node) => ({
+      top: node.getBoundingClientRect().top, height: node.getBoundingClientRect().height,
+      marginTop: getComputedStyle(node).marginTop,
+      marginBottom: getComputedStyle(node).marginBottom,
+    })));
+    expect(after).toEqual(before);
+  };
+  await assertGeometry();
+  await paragraph.press('End');
+  await page.keyboard.insertText('新增');
+  await page.waitForTimeout(150);
+  await assertGeometry();
+  await page.screenshot({ path: test.info().outputPath('plain-paragraph-editing.png') });
+  await paragraph.press('Control+Enter');
+  await expect(paragraphs).toHaveCount(3);
+  await assertGeometry();
+  await page.locator('#toggle-sourceview-btn').check();
+  await expect(page.locator('.cm-content')).toHaveText('前一段正在编辑的正文新增后一段');
+  const source = await page.locator('.cm-line').allTextContents();
+  expect(source.map((line) => line.replace(/\u200b/g, '')))
+    .toEqual(['前一段', '', '正在编辑的正文新增', '', '后一段']);
+});
+
 test('正文已有换行在进入和退出可视编辑时不增加行距或移动后续段落', async ({ page }) => {
   await openDocument(page, '第一行 **加粗**\n第二行  \n第三行 `代码`\n\n后续段落');
   const paragraph = page.locator('.preview p').first();

@@ -40,9 +40,16 @@ function escapeText(text: string) {
     .replace(/^([ \t]*)(\d+)([.)])(\s)/gm, '$1$2\\$3$4');
 }
 
-export function visualHtmlToMarkdown(html: string): string {
+export function visualHtmlToMarkdown(html: string, preserveLineBreaks = false): string {
   const host = document.createElement('div');
   host.innerHTML = sanitizeMarkdownHtml(html, { trustedAttributes: false });
+  if (preserveLineBreaks) {
+    let tail: ChildNode | null = host.lastChild;
+    while (tail instanceof HTMLElement && tail.lastChild) tail = tail.lastChild;
+    // Chromium 用末尾额外的 br 承载空行光标；它不能再写成第二个换行。
+    if (tail instanceof HTMLBRElement && (tail.previousSibling instanceof HTMLBRElement
+      || !host.textContent)) tail.remove();
+  }
   function wrap(text: string, marker: string) {
     const [, before, value, after] = /^(\s*)([\s\S]*?)(\s*)$/.exec(text)!;
     return before + (value ? marker + value + marker : '') + after;
@@ -58,7 +65,7 @@ export function visualHtmlToMarkdown(html: string): string {
     if (!(node instanceof HTMLElement)) return '';
     const text = [...node.childNodes].map(walk).join('');
     const tag = node.tagName.toLowerCase();
-    if (tag === 'br') return '\n';
+    if (tag === 'br') return preserveLineBreaks ? '\r' : '\n';
     if (tag === 'strong' || tag === 'b') return wrap(text, '**');
     if (tag === 'em' || tag === 'i') return wrap(text, '*');
     if (tag === 's' || tag === 'del' || tag === 'strike') return wrap(text, '~~');
@@ -82,8 +89,9 @@ export function visualHtmlToMarkdown(html: string): string {
     if (tag === 'div' || tag === 'p') return `\n\n${text}\n\n`;
     return text;
   }
-  return [...host.childNodes].map(walk).join('').replace(/\n{3,}/g, '\n\n')
+  const result = [...host.childNodes].map(walk).join('').replace(/\n{3,}/g, '\n\n')
     .replace(/^\n+|\n+$/g, '');
+  return preserveLineBreaks ? result.replace(/\r/g, '\n') : result;
 }
 
 export function applyVisualPrefix(text: string, block: VisualBlock) {

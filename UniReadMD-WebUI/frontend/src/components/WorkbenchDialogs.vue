@@ -5,6 +5,7 @@ import PreviewInsertMenu from './PreviewInsertMenu.vue';
 import VisualLinkDialog from './VisualLinkDialog.vue';
 import type { ParityWorkflows } from '../features/workspace/parity-workflows';
 import '../features/workspace/parity-workflows.css';
+import { contextMenuKeys } from '../features/workspace/context-menu-position';
 
 const props = defineProps<{ workflows: ParityWorkflows }>();
 const model = reactive(props.workflows);
@@ -130,8 +131,9 @@ function trapFocus(event: KeyboardEvent) {
     <button type='button' @click='model.externalChanged = false'>稍后处理</button>
   </div>
   <div
-    v-if='model.fileMenu && model.selectedRow' class='workspace-context-menu'
+    v-if='model.fileMenu && model.selectedRow' class='workspace-context-menu typora-context-menu'
     :style='model.fileMenuPosition' role='menu' aria-label='文件操作菜单'
+    @keydown='contextMenuKeys'
   >
     <template v-if='model.selectedRow.type === "file"'>
       <button role='menuitem' @click='model.openFileAt(model.selectedRow.path)'>打开</button>

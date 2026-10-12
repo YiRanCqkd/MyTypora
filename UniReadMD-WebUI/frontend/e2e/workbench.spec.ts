@@ -717,19 +717,19 @@ test.describe('UniReadMD workbench', () => {
     await expect(page.getByTestId('editor-host')).not.toBeVisible();
 
     await page.locator('.preview table tbody tr').first().locator('td').first().click();
-    const cellEditor = page.getByTestId('preview-table-cell-editor');
-    const cellInput = page.getByTestId('preview-table-cell-editor-input');
+    const cellEditor = page.locator('.preview [contenteditable="true"]');
+    const cellInput = page.locator('.preview [contenteditable="true"]');
     await expect(cellEditor).toBeVisible();
-    await expect(cellInput).toHaveValue('1');
+    await expect(cellInput).toHaveText('1');
 
     await cellInput.fill('11');
     await cellInput.press('Tab');
-    await expect(cellInput).toHaveValue('2');
+    await expect(cellInput).toHaveText('2');
     await expect(page.locator('.preview table tbody tr').first().locator('td').first()).toContainText('11');
 
     await cellInput.fill('22');
     await cellInput.press('Enter');
-    await expect(cellInput).toHaveValue('4');
+    await expect(cellInput).toHaveText('4');
     await expect(page.locator('.preview table tbody tr').first().locator('td').nth(1)).toContainText('22');
 
     await cellInput.press('Escape');
@@ -760,7 +760,7 @@ test.describe('UniReadMD workbench', () => {
     await expect(page.getByTestId('editor-host')).not.toBeVisible();
 
     await page.locator('.preview table tbody tr').first().locator('td').first().click();
-    const cellInput = page.getByTestId('preview-table-cell-editor-input');
+    const cellInput = page.locator('.preview [contenteditable="true"]');
     await expect(cellInput).toBeVisible();
 
     await cellInput.press('Control+Alt+ArrowDown');
@@ -788,7 +788,7 @@ test.describe('UniReadMD workbench', () => {
     await expect(page.locator('.preview table tbody tr')).toHaveCount(2);
 
     await cellInput.press('Escape');
-    await expect(page.getByTestId('preview-table-cell-editor')).toHaveCount(0);
+    await expect(page.locator('.preview [contenteditable="true"]')).toHaveCount(0);
 
     await page.locator('#toggle-sourceview-btn').click();
     await expect(page.getByTestId('editor-host')).toBeVisible();
@@ -978,7 +978,7 @@ test.describe('UniReadMD workbench', () => {
 
     const firstCell = page.locator('.preview table tbody tr').first().locator('td').first();
     await firstCell.click();
-    const cellInput = page.getByTestId('preview-table-cell-editor-input');
+    const cellInput = page.locator('.preview [contenteditable="true"]');
     await expect(cellInput).toBeVisible();
     await cellInput.fill('11');
     await cellInput.press('Tab');
@@ -1132,11 +1132,11 @@ test.describe('UniReadMD workbench', () => {
     await expect.poll(async () => {
       const box = await topTitlebar.boundingBox();
       return box?.x ?? 999;
-    }).toBeLessThan(6);
+    }).toBeCloseTo(topBefore!.x, 0);
     await expect.poll(async () => {
       const box = await statusBar.boundingBox();
       return box?.x ?? 999;
-    }).toBeLessThan(6);
+    }).toBeCloseTo(statusBefore!.x, 0);
 
     await page.keyboard.press('Control+Alt+F');
     await page.keyboard.press('Control+Alt+T');

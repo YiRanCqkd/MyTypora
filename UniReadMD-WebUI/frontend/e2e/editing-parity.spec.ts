@@ -14,8 +14,8 @@ test('表格编辑保持对齐及转义单元格，列对齐菜单可用', async
   await openContent(page, '| 甲 | 乙 |\n| :---: | ---: |\n| a\\|b | c |');
   await expect(page.locator('.preview tbody td')).toHaveCount(2);
   await page.locator('.preview tbody td').first().click();
-  const input = page.locator('.preview-table-cell-editor input');
-  await expect(input).toHaveValue('a\\|b');
+  const input = page.locator('.preview [contenteditable="true"]');
+  await expect(input).toHaveText('a|b');
   await input.fill('new|value');
   await input.press('Enter');
   await expect(page.locator('.preview tbody td').first()).toHaveText('new|value');

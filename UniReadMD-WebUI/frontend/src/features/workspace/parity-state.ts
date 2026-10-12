@@ -15,7 +15,7 @@ export function createParityState(domains: WorkbenchDomains) {
   const entryAction = ref('');
   const selectedRow = ref<FileTreeRow | null>(null);
   const fileMenu = ref(false);
-  const fileMenuPosition = ref({ left: '0px', top: '0px' });
+  const fileMenuPosition = ref<Record<string, string>>({ left: '0px', top: '0px' });
   const notice = ref('');
   const externalChanged = ref(false);
   const busy = ref(false);

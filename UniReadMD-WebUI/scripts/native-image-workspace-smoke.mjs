@@ -137,7 +137,7 @@ try {
   await page.getByRole('menuitem', { name: '表格…' }).click();
   await page.getByRole('button', { name: '插入表格', exact: true }).click();
   await expect(page.locator('.preview table th')).toHaveCount(2);
-  await expect(page.getByTestId('preview-table-cell-editor-input')).toBeFocused();
+  await expect(page.locator('.preview table th[contenteditable="true"]')).toBeFocused();
   checks.push('真实工作区空白右键插入表格并直接编辑表头');
 } finally {
   await browser?.close();

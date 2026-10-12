@@ -2,6 +2,7 @@ import type { PreviewTableAction, ParsedMarkdownTable } from '../../utils/previe
 import type { PreviewTableSelection } from './editor-contracts';
 import { applyPreviewTableActionToModel } from '../../utils/preview-table';
 import { nextTick } from 'vue';
+import { measuredContextMenuStyle } from '../workspace/context-menu-position';
 import type { useContextMenuActions } from './context-menu-actions';
 import type { usePreviewEditingSession } from './preview-editing-session';
 import type { useTableCellEditing } from './table-cell-editing';
@@ -12,6 +13,7 @@ import type { useApplicationStatus } from './application-status';
 import type { usePreviewEditingEvents } from './preview-editing-events';
 import type { usePreviewEditingState } from './preview-editing-state';
 import type { useViewOptions } from '../settings/view-options';
+import type { createWorkbenchRuntime } from './workbench-runtime';
 type UseTableActionsDependencies =
   ReturnType<typeof useContextMenuActions> &
   ReturnType<typeof usePreviewEditingSession> &
@@ -22,14 +24,16 @@ type UseTableActionsDependencies =
   ReturnType<typeof useApplicationStatus> &
   ReturnType<typeof usePreviewEditingEvents> &
   ReturnType<typeof usePreviewEditingState> &
-  ReturnType<typeof useViewOptions>;
+  ReturnType<typeof useViewOptions> &
+  ReturnType<typeof createWorkbenchRuntime>;
 
 export function useTableActions(input: UseTableActionsDependencies) {
   const { applyPreviewTableMutation,closePreviewInlineEditor,closePreviewTableCellEditor,
     closePreviewTableCellEditorAndCommit,closePreviewTableMenu,closeSourceContextMenu,
-    commitPreviewTableCellEditValue,editorPreviewHost,errorMessage,mutatePreviewTable,
+    commitPreviewTableCellEditValue,editorPreviewHost,errorMessage,findPreviewTableCellNode,
+    mutatePreviewTable,
     openPreviewTableCellEditor,previewTableCellEditSelection,previewTableMenuStyle,
-    previewTableMenuVisible,previewTableSelection,resolvePreviewTableCellContext,sourceMode,
+    previewTableMenuVisible,previewTableSelection,resolvePreviewTableCellContext,sourceMode,runtime,
   } = input;
 
   function applyPreviewTableAction(action: string) {
@@ -50,13 +54,14 @@ export function useTableActions(input: UseTableActionsDependencies) {
     });
   }
 
-  function handlePreviewContextMenu(event: MouseEvent) {
+  async function handlePreviewContextMenu(event: MouseEvent) {
     if (sourceMode.value) {
       return;
     }
 
     const target = event.target instanceof HTMLElement ? event.target : null;
     const context = resolvePreviewTableCellContext(target);
+    const mapped = runtime.flushVisualEdits?.(context || undefined) || context;
     if (!context) {
       closePreviewTableMenu();
       return;
@@ -72,23 +77,37 @@ export function useTableActions(input: UseTableActionsDependencies) {
     closePreviewTableCellEditorAndCommit();
     closeSourceContextMenu();
     closePreviewInlineEditor();
+    // 刷新后按换算后的范围重新定位单元格，不能沿用冻结预览的旧源码行号。
+    await nextTick();
+    const cell = mapped ? findPreviewTableCellNode(mapped) : null;
+    const refreshed = resolvePreviewTableCellContext(cell);
+    if (!refreshed) {
+      closePreviewTableMenu();
+      return;
+    }
     previewTableSelection.value = {
-      startLine: context.startLine,
-      endLine: context.endLine,
-      rowIndex: context.rowIndex,
-      colIndex: context.colIndex,
+      startLine: refreshed.startLine,
+      endLine: refreshed.endLine,
+      rowIndex: refreshed.rowIndex,
+      colIndex: refreshed.colIndex,
     };
     const containerRect = container.getBoundingClientRect();
-    const menuHeight = Math.min(470, containerRect.height - 16);
     previewTableMenuStyle.value = {
-      left: `${Math.max(8, Math.min(event.clientX - containerRect.left,
-        containerRect.width - 184))}px`,
-      top: `${Math.max(8, Math.min(event.clientY - containerRect.top,
-        containerRect.height - menuHeight - 8))}px`,
-      maxHeight: `${Math.max(100, menuHeight)}px`,
-      overflowY: 'auto',
+      left: `${event.clientX}px`, top: `${event.clientY}px`, visibility: 'hidden',
     };
     previewTableMenuVisible.value = true;
+    void nextTick(async () => {
+      const menu = document.querySelector<HTMLElement>('.preview-table-menu');
+      if (!menu || !previewTableMenuVisible.value) return;
+      previewTableMenuStyle.value = measuredContextMenuStyle(menu, event, {
+        left: containerRect.left + 8, right: containerRect.right - 8,
+        top: containerRect.top + 8, bottom: containerRect.bottom - 8,
+      });
+      await nextTick();
+      if (previewTableMenuVisible.value) {
+        menu.querySelector('button')?.focus({ preventScroll: true });
+      }
+    });
   }
 
   function getPreviewTableSelectionAfterAction(
@@ -164,7 +183,7 @@ export function useTableActions(input: UseTableActionsDependencies) {
     );
     closePreviewTableCellEditor();
     await nextTick();
-    openPreviewTableCellEditor(nextSelection);
+    openPreviewTableCellEditor(nextSelection, true);
   }
 
   return { applyPreviewTableAction,handlePreviewContextMenu,

@@ -6,6 +6,17 @@ import {
 } from './preview-table';
 
 describe('preview table utils', () => {
+  it('保留省略竖线的数据行及其顺序，序列化后仍可读回', () => {
+    const table = parseMarkdownTable('| A |\n| --- |\none\ntwo')!;
+    expect(table.rows).toEqual([['one'], ['two']]);
+    expect(parseMarkdownTable(serializeMarkdownTable(table))).toEqual(table);
+  });
+
+  it('省略竖线的短数据行应补齐空列，与完整数据行保持顺序', () => {
+    expect(parseMarkdownTable('| A | B |\n| --- | --- |\none\n| two | value |')?.rows)
+      .toEqual([['one', ''], ['two', 'value']]);
+  });
+
   it('编辑与移动列应保持对齐、转义竖线和代码单元格', () => {
     const table = parseMarkdownTable(
       '| 中间 | 右侧 |\n| :---: | ---: |\n| a\\|b | `x\\|y` |',
